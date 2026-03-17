@@ -1,0 +1,201 @@
+@startuml
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package com.utephonehub.entity {
+
+    enum UserRole {
+        customer
+        admin
+    }
+
+    enum UserStatus {
+        active
+        locked
+        pending
+    }
+
+    enum OrderStatus {
+        PENDING
+        PROCESSING
+        SHIPPED
+        DELIVERED
+        CANCELLED
+    }
+
+    enum PaymentMethod {
+        COD
+        STORE_PICKUP
+        BANK_TRANSFER
+    }
+
+    enum DiscountType {
+        PERCENTAGE
+        FIXED_AMOUNT
+    }
+
+    enum VoucherStatus {
+        ACTIVE
+        INACTIVE
+        EXPIRED
+    }
+
+    class User {
+        - Long id
+        - String username
+        - String fullName
+        - String email
+        - String passwordHash
+        - String phoneNumber
+        - UserRole role
+        - UserStatus status
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class Address {
+        - Long id
+        - String recipientName
+        - String phoneNumber
+        - String streetAddress
+        - String province
+        - String provinceCode
+        - String ward
+        - String wardCode
+        - Boolean isDefault
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class Brand {
+        - Long id
+        - String name
+        - String description
+        - String logoUrl
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class Category {
+        - Long id
+        - String name
+        - String description
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class Product {
+        - Long id
+        - String name
+        - String description
+        - BigDecimal price
+        - Integer stockQuantity
+        - String thumbnailUrl
+        - String specifications
+        - Boolean status
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class ProductImage {
+        - Long id
+        - String imageUrl
+        - String altText
+        - Boolean isPrimary
+        - LocalDateTime createdAt
+    }
+
+    class Cart {
+        - Long id
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class CartItem {
+        - Long id
+        - Integer quantity
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class Order {
+        - Long id
+        - String orderCode
+        - String email
+        - String recipientName
+        - String phoneNumber
+        - String streetAddress
+        - String city
+        - OrderStatus status
+        - PaymentMethod paymentMethod
+        - BigDecimal totalAmount
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class OrderItem {
+        - Long id
+        - Integer quantity
+        - BigDecimal price
+        - LocalDateTime createdAt
+    }
+
+    class Voucher {
+        - Long id
+        - String code
+        - DiscountType discountType
+        - BigDecimal discountValue
+- Integer maxUsage
+        - BigDecimal minOrderValue
+        - LocalDateTime expiryDate
+        - VoucherStatus status
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class Review {
+        - Long id
+        - Integer rating
+        - String comment
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class ReviewLike {
+        - Long id
+        - LocalDateTime createdAt
+    }
+
+    ' === 1. COMPOSITION (*-->) Hình thoi đặc: Áp dụng cho CascadeType.ALL ===
+    Order "1" *--> "*" OrderItem : contains
+    Product "1" *--> "*" ProductImage : has
+    Cart "1" *--> "*" CartItem : contains
+    User "1" *--> "*" Address : has
+    User "1" *--> "*" Review : writes
+    User "1" *--> "*" Order : places
+    User "1" *--> "1" Cart : owns
+    Product "1" *--> "*" Review : receives
+    Review "1" *--> "*" ReviewLike : receives
+    Category "1" *--> "*" Product : contains
+    Brand "1" *--> "*" Product : manufactures
+    Category "1" *--> "*" Category : parent/children
+
+    ' === 2. AGGREGATION (o-->) Hình thoi rỗng: Tập hợp (Không có trong code hiện tại do tất cả đều là CascadeType.ALL) ===
+
+    ' === 3. ASSOCIATION (-->) Mũi tên thường: Liên kết tham chiếu (Không Cascade) ===
+    CartItem "*" --> "1" Product : references
+    OrderItem "*" --> "1" Product : references
+    Voucher "1" --> "*" Order : applied to
+    ReviewLike "*" --> "1" User : liked by
+    Review "*" --> "1" Product : about
+
+    ' === 4. DEPENDENCY (..>) Nét đứt: Phụ thuộc Enum ===
+    User ..> UserRole
+    User ..> UserStatus
+    Order ..> OrderStatus
+    Order ..> PaymentMethod
+    Voucher ..> DiscountType
+    Voucher ..> VoucherStatus
+}
+@enduml
