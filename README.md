@@ -1,7 +1,7 @@
 # justFUML Project
 
 ## Tổng quan
-Project **justFUML** (với nền tảng **UTE Phone Hub**) là một dự án quản lý hệ thống thương mại điện tử chuyên về điện thoại di động. Dự án tập trung vào việc mô hình hóa các thực thể (entities) và mối quan hệ giữa chúng thông qua các sơ đồ UML (Class Diagram và Use Case Diagram) sử dụng **PlantUML**.
+Project **justFUML** là một dự án quản lý hệ thống thương mại điện tử chuyên về tai nghe và thiết bị âm thanh. Dự án tập trung vào việc mô hình hóa các thực thể (entities) và mối quan hệ giữa chúng thông qua các sơ đồ UML (Class Diagram và Use Case Diagram) sử dụng **PlantUML**.
 
 Hệ thống bao gồm các tính năng cốt lõi như:
 - Quản lý người dùng và địa chỉ.
@@ -17,7 +17,6 @@ justFUML/
 ├── .idea/                  # Cấu hình IDE (IntelliJ)
 ├── src/                    # Thư mục mã nguồn và tài liệu mô hình hóa
 │   ├── reference/          # Các tệp tham chiếu chứa mã nguồn Java thực thể
-│   │   ├── class.txt       # Bản nháp/tham chiếu định nghĩa class
 │   │   └── package.txt     # Tổng hợp toàn bộ code Java entity (Address, Brand, Order, v.v.)
 │   ├── class_diagram.puml  # Sơ đồ lớp (Class Diagram) chi tiết của hệ thống
 │   └── use_case_diagam.puml # Sơ đồ Ca sử dụng (Use Case Diagram) của hệ thống
