@@ -3,7 +3,7 @@
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
 
-package com.utesoundshop.entity {
+package utesoundshop {
 
     enum UserRole {
         customer
