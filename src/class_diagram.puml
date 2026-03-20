@@ -24,11 +24,25 @@ package utesoundshop {
         CANCELLED
     }
 
-    enum PaymentMethod {
-        COD
-        STORE_PICKUP
-        BANK_TRANSFER
+    interface PaymentStrategy <<interface>> {
+        + pay(amount: BigDecimal): void
     }
+
+    class CODStrategy {
+        + pay(amount: BigDecimal): void
+    }
+
+    class StorePickupStrategy {
+        + pay(amount: BigDecimal): void
+    }
+
+    class BankTransferStrategy {
+        + pay(amount: BigDecimal): void
+    }
+
+    PaymentStrategy <|.. CODStrategy
+    PaymentStrategy <|.. StorePickupStrategy
+    PaymentStrategy <|.. BankTransferStrategy
 
     enum DiscountType {
         PERCENTAGE
@@ -90,7 +104,6 @@ package utesoundshop {
         - String name
         - String description
         - BigDecimal price
-        - Integer stockQuantity
         - String thumbnailUrl
         - String specifications
         - Boolean status
@@ -128,7 +141,7 @@ package utesoundshop {
         - String streetAddress
         - String city
         - OrderStatus status
-        - PaymentMethod paymentMethod
+        - PaymentStrategy paymentStrategy
         - BigDecimal totalAmount
         - LocalDateTime createdAt
         - LocalDateTime updatedAt
@@ -137,7 +150,6 @@ package utesoundshop {
     class OrderItem {
         - Long id
         - Integer quantity
-        - BigDecimal price
         - LocalDateTime createdAt
     }
 
@@ -182,12 +194,13 @@ package utesoundshop {
     Brand "1" *--> "*" Product : manufactures
     'Voucher "1" *--> "*" Order : applied to
 
-    ' === 2. AGGREGATION (o-->) Hình thoi rỗng: Tập hợp (Không có trong code hiện tại do tất cả đều là CascadeType.ALL) ===
+    ' === 2. AGGREGATION (o-->) Hình thoi rỗng: Tập hợp ===
+    OrderItem "*" o--> "1" Product : references
+    Order o--> PaymentStrategy : uses
 
-    ' === 3. ASSOCIATION (-->) Mũi tên thường: Liên kết tham chiếu (Không Cascade) ===
+    ' === 3. ASSOCIATION (--> hoặc --) Mũi tên thường hoặc đường thẳng: Liên kết tham chiếu ===
     CartItem "*" --> "1" Product : references
-    OrderItem "*" --> "1" Product : references
-    Voucher "1" --> "*" Order : applied to
+    Voucher "1" -- "*" Order : applied to
     ReviewLike "*" --> "1" User : liked by
 
     
@@ -197,7 +210,6 @@ package utesoundshop {
     User ..> UserRole
     User ..> UserStatus
     Order ..> OrderStatus
-    Order ..> PaymentMethod
     Voucher ..> DiscountType
     Voucher ..> VoucherStatus
 }
