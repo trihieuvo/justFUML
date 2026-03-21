@@ -1,0 +1,73 @@
+@startuml
+!theme plain
+skinparam linetype ortho
+skinparam ActivityBackgroundColor #f9f9f9
+skinparam ActivityBorderColor #333333
+
+title Activity Diagram - Thêm sản phẩm vào giỏ hàng
+
+|Người dùng|
+start
+:Truy cập trang chi tiết sản phẩm;
+:Chọn số lượng (quantity);
+:Nhấn nút "Thêm vào giỏ hàng";
+
+|Hệ thống|
+:Nhận yêu cầu thêm vào giỏ hàng
+(userId, productId, quantity);
+:Lấy hoặc tạo mới Giỏ hàng (Cart) của người dùng;
+:Truy xuất thông tin Sản phẩm (Product);
+
+if (Sản phẩm tồn tại?) then (Không)
+  :Ném ngoại lệ "Không tìm thấy sản phẩm";
+  |Người dùng|
+  :Hiển thị thông báo lỗi;
+  stop
+else (Có)
+  |Hệ thống|
+  if (Số lượng tồn kho >= Số lượng yêu cầu?) then (Không)
+    :Ném ngoại lệ "Số lượng yêu cầu
+    vượt quá số lượng tồn kho";
+    |Người dùng|
+    :Hiển thị thông báo lỗi;
+    stop
+  else (Có)
+    |Hệ thống|
+    :Tìm kiếm sản phẩm (CartItem)
+    trong Giỏ hàng;
+
+    if (CartItem đã tồn tại?) then (Có)
+      :Tính số lượng mới =
+      Số lượng hiện tại + quantity;
+
+      if (Số lượng tồn kho >= Số lượng mới?) then (Không)
+        :Ném ngoại lệ "Số lượng yêu cầu
+        vượt quá số lượng tồn kho";
+        |Người dùng|
+        :Hiển thị thông báo lỗi;
+        stop
+      else (Có)
+        |Hệ thống|
+        :Cập nhật số lượng mới cho CartItem;
+      endif
+
+    else (Không)
+      |Hệ thống|
+      :Tạo CartItem mới với
+      số lượng yêu cầu;
+    endif
+
+    :Lưu CartItem vào cơ sở dữ liệu;
+    :Tải lại dữ liệu Giỏ hàng mới nhất;
+    :Tính toán tổng tiền (totalPrice)
+    và tổng số món (totalItems);
+    :Trả về Response Giỏ hàng;
+
+    |Người dùng|
+    :Cập nhật giao diện Giỏ hàng;
+    :Hiển thị thông báo "Thêm thành công";
+    stop
+  endif
+endif
+
+@enduml
