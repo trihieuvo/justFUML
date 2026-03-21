@@ -4,52 +4,58 @@ skinparam linetype ortho
 skinparam ActivityBackgroundColor #f9f9f9
 skinparam ActivityBorderColor #333333
 
-title Activity Diagram - Luồng xử lý đơn hàng (Admin) - Đã Sửa Lỗi
+title Activity Diagram - Luồng Quản lý đơn hàng (Admin - MVC Improved)
 
 |Admin|
 start
-:Truy cập module "Quản lý Đơn hàng";
-:Chọn đơn hàng đang ở trạng thái **PENDING**;
-:Kiểm tra chi tiết đơn hàng \n(Thông tin KH, Tồn kho, Thanh toán);
+:Truy cập danh sách đơn hàng;
+:Chọn đơn hàng cần xử lý;
+:Kiểm tra chi tiết đơn hàng;
+note right
+    - Thông tin khách hàng
+    - Trạng thái thanh toán
+    - Kiểm tra tồn kho thực tế
+end note
 
-if (Đơn hàng đủ điều kiện?) then (Có)
-    :Xác nhận duyệt đơn hàng;
-
+if (Đơn hàng hợp lệ?) then (Có)
+    :Xác nhận đơn hàng (Duyệt);
     |Hệ thống|
-    :Cập nhật OrderStatus = **PROCESSING**;
+    :Cập nhật trạng thái **PROCESSING**;
+    :Gửi Email thông báo "Đang xử lý";
 
     |Admin|
-    :Tiến hành lấy hàng và đóng gói;
-    :Bàn giao cho ĐVVC;
-    :Xác nhận đã gửi hàng;
+    :Đóng gói & Giao cho đơn vị vận chuyển;
+    :Cập nhật trạng thái giao hàng;
 
     |Hệ thống|
-    :Cập nhật OrderStatus = **SHIPPED**;
+    :Cập nhật trạng thái **SHIPPED**;
+    :Gửi Email thông báo "Đang giao hàng";
 
     |Admin|
-    :Theo dõi vận đơn qua ĐVVC;
+    :Theo dõi lộ trình vận chuyển;
 
-    if (Trạng thái giao hàng?) then (Giao thành công)
-        :Xác nhận khách đã nhận hàng;
+    if (Kết quả giao hàng?) then (Thành công)
+        :Xác nhận Hoàn thành;
         |Hệ thống|
-        :Cập nhật OrderStatus = **DELIVERED**;
+        :Cập nhật trạng thái **DELIVERED**;
+        :Gửi Email cảm ơn & xác nhận nhận hàng;
+    else (Thất bại/Khách từ chối)
+        :Xác nhận Đơn hàng bị hoàn trả;
         |Hệ thống|
-        stop
-    else (Giao thất bại / Bị hoàn trả)
-        :Xác nhận hoàn hàng;
-        |Hệ thống|
-        :Cập nhật OrderStatus = **CANCELLED**;
-        |Hệ thống|
-        stop
+        :Cập nhật trạng thái **CANCELLED**;
+        :Cộng lại số lượng vào tồn kho (Restock);
+        :Gửi Email thông báo hủy đơn;
     endif
 
-else (Không - Sai thông tin / Hết hàng)
+else (Không)
     |Admin|
-    :Từ chối và Hủy đơn hàng;
-
+    :Từ chối đơn hàng;
+    :Nhập lý do hủy đơn;
     |Hệ thống|
-    :Cập nhật OrderStatus = **CANCELLED**;
-    |Hệ thống|
-    stop
+    :Cập nhật trạng thái **CANCELLED**;
+    :Cộng lại số lượng vào tồn kho (Restock);
+    :Gửi Email thông báo lý do hủy cho khách;
 endif
+
+stop
 @enduml

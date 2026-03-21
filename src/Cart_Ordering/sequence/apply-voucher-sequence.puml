@@ -8,7 +8,7 @@ boundary UI
 control OrderController
 control OrderService
 control VoucherService
-entity VoucherRepository
+entity Database
 
 User -> UI : Nhập thông tin & voucherCode\nNhấn "Đặt hàng"
 activate UI
@@ -24,10 +24,10 @@ activate OrderService
 OrderService -> VoucherService : validateVoucher(voucherCode, orderTotal, userId)
 activate VoucherService
 
-VoucherService -> VoucherRepository : findByCode(voucherCode)
-activate VoucherRepository
-VoucherRepository --> VoucherService : Optional<Voucher>
-deactivate VoucherRepository
+VoucherService -> Database : Truy vấn Voucher bằng Code
+activate Database
+Database --> VoucherService : Trả về dữ liệu Voucher
+deactivate Database
 
 VoucherService -> VoucherService : Kiểm tra (Status, Expiry, MaxUsage, MinOrderValue)
 
@@ -45,13 +45,16 @@ alt Validation thành công
     deactivate VoucherService
 
     OrderService -> OrderService : Tính finalAmount = totalAmount - discount
-    OrderService -> OrderService : Lưu Order và OrderItem vào DB
-    OrderService --> OrderController : Trả về thông tin đơn hàng (Map)
+    OrderService -> Database : Lưu thông tin Order và OrderItem
+    activate Database
+    Database --> OrderService : Thành công
+    deactivate Database
 
-    OrderController --> UI : HTTP 201 Created (JSON thông báo thành công)
+    OrderService --> OrderController : Trả về thông tin đơn hàng
+    OrderController --> UI : HTTP 201 Created (Thành công)
 else Validation thất bại
     OrderService --> OrderController : throw RuntimeException(Lỗi voucher)
-    OrderController --> UI : HTTP 400 Bad Request (JSON báo lỗi)
+    OrderController --> UI : HTTP 400 Bad Request (Lỗi)
 end
 deactivate OrderService
 deactivate OrderController
