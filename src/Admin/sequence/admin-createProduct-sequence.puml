@@ -1,0 +1,64 @@
+@startuml
+!theme plain
+skinparam SequenceMessageAlign center
+skinparam linetype ortho
+
+actor "Quản trị viên" as Admin
+boundary "UI (Admin Panel)" as UI
+control "AdminProductController" as Controller
+control "ProductService" as Service
+entity "Database" as DB
+
+Admin -> UI : Nhập thông tin sản phẩm và link ảnh
+activate UI
+
+UI -> Controller : POST /api/admin/products\n(JSON: ProductRequest)
+activate Controller
+
+Controller -> Service : createProduct(request)
+activate Service
+
+Service -> DB : findCategoryById(categoryId)
+activate DB
+DB --> Service : Trả về Category
+deactivate DB
+
+alt Category không tồn tại
+    Service --> Controller : throw Exception("Danh mục không tồn tại")
+    Controller --> UI : 400 Bad Request
+    UI --> Admin : Hiển thị thông báo lỗi
+else Category hợp lệ
+    Service -> DB : findBrandById(brandId)
+    activate DB
+    DB --> Service : Trả về Brand
+    deactivate DB
+
+    alt Brand không tồn tại
+        Service --> Controller : throw Exception("Thương hiệu không tồn tại")
+        Controller --> UI : 400 Bad Request
+        UI --> Admin : Hiển thị thông báo lỗi
+    else Brand hợp lệ
+        Service -> Service : Khởi tạo Product, gán thuộc tính\nvà map Category, Brand
+
+        Service -> DB : save(product)
+        activate DB
+        DB --> Service : Trả về Product (đã có ID)
+        deactivate DB
+
+        Service -> DB : findByIdWithRelations(id)
+        activate DB
+        DB --> Service : Trả về dữ liệu Product đầy đủ\n(tránh lỗi Lazy Load)
+        deactivate DB
+
+        Service --> Controller : Trả về ProductResponse
+        deactivate Service
+
+        Controller --> UI : 201 Created (JSON: ProductResponse)
+        deactivate Controller
+
+        UI --> Admin : Thông báo thêm mới thành công và hiển thị sản phẩm
+        deactivate UI
+    end
+end
+
+@enduml

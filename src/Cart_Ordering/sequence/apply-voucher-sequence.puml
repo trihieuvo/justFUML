@@ -1,0 +1,62 @@
+@startuml
+!theme plain
+skinparam SequenceMessageAlign center
+skinparam linetype ortho
+
+actor User
+boundary UI
+control OrderController
+control OrderService
+control VoucherService
+entity VoucherRepository
+
+User -> UI : Nhập thông tin & voucherCode\nNhấn "Đặt hàng"
+activate UI
+
+UI -> OrderController : POST /api/v1/checkout\n(Gửi JSON payload)
+activate OrderController
+
+OrderController -> OrderController : Parse JSON (lấy voucherCode, shippingInfo...)
+
+OrderController -> OrderService : checkout(userId, shippingInfo, voucherCode, ...)
+activate OrderService
+
+OrderService -> VoucherService : validateVoucher(voucherCode, orderTotal, userId)
+activate VoucherService
+
+VoucherService -> VoucherRepository : findByCode(voucherCode)
+activate VoucherRepository
+VoucherRepository --> VoucherService : Optional<Voucher>
+deactivate VoucherRepository
+
+VoucherService -> VoucherService : Kiểm tra (Status, Expiry, MaxUsage, MinOrderValue)
+
+alt Nếu Voucher hợp lệ
+    VoucherService --> OrderService : Trả về VoucherValidationResult (hợp lệ)
+else Nếu Voucher không hợp lệ
+    VoucherService --> OrderService : Trả về VoucherValidationResult (báo lỗi)
+end
+deactivate VoucherService
+
+alt Validation thành công
+    OrderService -> VoucherService : calculateDiscount(voucher, orderTotal)
+    activate VoucherService
+    VoucherService --> OrderService : Trả về số tiền giảm (discount)
+    deactivate VoucherService
+
+    OrderService -> OrderService : Tính finalAmount = totalAmount - discount
+    OrderService -> OrderService : Lưu Order và OrderItem vào DB
+    OrderService --> OrderController : Trả về thông tin đơn hàng (Map)
+
+    OrderController --> UI : HTTP 201 Created (JSON thông báo thành công)
+else Validation thất bại
+    OrderService --> OrderController : throw RuntimeException(Lỗi voucher)
+    OrderController --> UI : HTTP 400 Bad Request (JSON báo lỗi)
+end
+deactivate OrderService
+deactivate OrderController
+
+UI --> User : Hiển thị kết quả đơn hàng / Lỗi
+deactivate UI
+
+@enduml
