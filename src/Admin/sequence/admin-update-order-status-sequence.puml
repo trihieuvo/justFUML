@@ -1,0 +1,51 @@
+@startuml
+!theme plain
+skinparam SequenceMessageAlign center
+
+actor Admin
+boundary "UI (Admin Panel)" as UI
+control AdminOrderController
+control OrderService
+control EmailService
+entity OrderRepository
+
+Admin -> UI : Chọn trạng thái mới\n(VD: SHIPPED)
+activate UI
+
+UI -> AdminOrderController : PUT /api/v1/admin/orders/{id}/status
+activate AdminOrderController
+
+AdminOrderController -> OrderService : updateOrderStatus(id, status)
+activate OrderService
+
+OrderService -> OrderRepository : findById(id)
+activate OrderRepository
+OrderRepository --> OrderService : Order
+deactivate OrderRepository
+
+OrderService -> OrderService : isValidStatusTransition()
+
+alt Hợp lệ
+    OrderService -> OrderRepository : save(order)
+    activate OrderRepository
+    OrderRepository --> OrderService : updatedOrder
+    deactivate OrderRepository
+
+    OrderService -> EmailService : sendStatusUpdateEmail(updatedOrder)
+    activate EmailService
+    EmailService --> OrderService : void
+    deactivate EmailService
+
+    OrderService --> AdminOrderController : OrderResponse
+else Không hợp lệ
+    OrderService --> AdminOrderController : throw BusinessException
+end
+deactivate OrderService
+
+AdminOrderController --> UI : HTTP 200 / 400
+deactivate AdminOrderController
+
+UI --> Admin : Thông báo thành công & Cập nhật UI
+deactivate UI
+
+@enduml

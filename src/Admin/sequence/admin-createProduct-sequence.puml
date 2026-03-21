@@ -3,7 +3,7 @@
 skinparam SequenceMessageAlign center
 skinparam linetype ortho
 
-actor "Quản trị viên" as Admin
+actor "Admin" as Admin
 boundary "UI (Admin Panel)" as UI
 control "AdminProductController" as Controller
 control "ProductService" as Service
