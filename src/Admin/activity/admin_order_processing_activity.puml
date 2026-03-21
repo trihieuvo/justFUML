@@ -1,0 +1,55 @@
+@startuml
+!theme plain
+skinparam linetype ortho
+skinparam ActivityBackgroundColor #f9f9f9
+skinparam ActivityBorderColor #333333
+
+title Activity Diagram - Luồng xử lý đơn hàng (Admin) - Đã Sửa Lỗi
+
+|Admin|
+start
+:Truy cập module "Quản lý Đơn hàng";
+:Chọn đơn hàng đang ở trạng thái **PENDING**;
+:Kiểm tra chi tiết đơn hàng \n(Thông tin KH, Tồn kho, Thanh toán);
+
+if (Đơn hàng đủ điều kiện?) then (Có)
+    :Xác nhận duyệt đơn hàng;
+
+    |Hệ thống|
+    :Cập nhật OrderStatus = **PROCESSING**;
+
+    |Admin|
+    :Tiến hành lấy hàng và đóng gói;
+    :Bàn giao cho ĐVVC;
+    :Xác nhận đã gửi hàng;
+
+    |Hệ thống|
+    :Cập nhật OrderStatus = **SHIPPED**;
+
+    |Admin|
+    :Theo dõi vận đơn qua ĐVVC;
+
+    if (Trạng thái giao hàng?) then (Giao thành công)
+        :Xác nhận khách đã nhận hàng;
+        |Hệ thống|
+        :Cập nhật OrderStatus = **DELIVERED**;
+        |Hệ thống|
+        stop
+    else (Giao thất bại / Bị hoàn trả)
+        :Xác nhận hoàn hàng;
+        |Hệ thống|
+        :Cập nhật OrderStatus = **CANCELLED**;
+        |Hệ thống|
+        stop
+    endif
+
+else (Không - Sai thông tin / Hết hàng)
+    |Admin|
+    :Từ chối và Hủy đơn hàng;
+
+    |Hệ thống|
+    :Cập nhật OrderStatus = **CANCELLED**;
+    |Hệ thống|
+    stop
+endif
+@enduml
