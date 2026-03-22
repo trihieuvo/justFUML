@@ -1,0 +1,51 @@
+@startuml
+!theme plain
+autonumber
+skinparam maxMessageSize 150
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+
+title Sequence Diagram - Luồng Đăng nhập
+
+actor "Khách (Guest)" as Guest
+participant "Giao diện (UI)" as UI
+participant "AuthController" as Controller
+participant "AuthService" as Service
+database "UserRepository\n(Database)" as DB
+
+Guest -> UI : Nhập Email & Mật khẩu\nNhấn "Đăng nhập"
+activate UI
+
+UI -> Controller : POST /api/v1/auth/login\n(JSON: email, password)
+activate Controller
+
+Controller -> Service : login(loginRequest)
+activate Service
+
+Service -> DB : findByEmail(email)
+activate DB
+DB --> Service : Trả về đối tượng User (hoặc null)
+deactivate DB
+
+alt Thông tin không hợp lệ (Không tìm thấy User hoặc Sai mật khẩu)
+    Service -> Service : Kiểm tra mật khẩu (thất bại)
+    Service --> Controller : Ném lỗi Exception (Unauthorized)
+    Controller --> UI : HTTP 401 (Lỗi xác thực)
+    UI --> Guest : Hiển thị thông báo "Sai tài khoản hoặc mật khẩu"
+
+else Thông tin hợp lệ
+    Service -> Service : Xác thực mật khẩu thành công\nTạo Access Token & Refresh Token
+    Service --> Controller : Trả về LoginResponse (chứa Token)
+    deactivate Service
+
+    Controller -> Controller : Lưu Refresh Token vào HttpOnly Cookie
+    Controller --> UI : HTTP 200 OK + Dữ liệu (Access Token, User Info)
+    deactivate Controller
+
+    UI -> UI : Lưu Access Token\n(LocalStorage / Context)
+    UI --> Guest : Thông báo thành công &\nChuyển hướng (Trang chủ / Admin Dashboard)
+end
+
+deactivate UI
+
+@enduml

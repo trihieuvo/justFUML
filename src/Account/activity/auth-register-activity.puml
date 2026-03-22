@@ -1,0 +1,90 @@
+@startuml
+!theme plain
+skinparam linetype ortho
+skinparam ActivityBackgroundColor #f9f9f9
+skinparam ActivityBorderColor #333333
+
+title Activity Diagram - Luồng Đăng ký tài khoản (Traditional & OAuth)
+
+|Người dùng|
+start
+:Truy cập trang đăng ký;
+:Chọn phương thức đăng ký;
+
+split
+   :Chọn "Đăng ký truyền thống";
+   repeat
+     :Nhập thông tin (Username, Email, Mật khẩu...);
+
+     |Hệ thống|
+     :Kiểm tra định dạng (Validation);
+     if (Định dạng hợp lệ?) then (Không)
+        :Hiển thị lỗi định dạng tại ô nhập liệu;
+
+        |Người dùng|
+        if (Tiếp tục thử lại?) then (Không)
+           stop
+        endif
+     else (Có)
+        |Hệ thống|
+        :Kiểm tra thông tin (DB);
+        if (Email/Username đã tồn tại?) then (Có)
+           :Hiển thị lỗi "Tài khoản đã tồn tại";
+
+           |Người dùng|
+           if (Tiếp tục thử lại?) then (Không)
+              stop
+           endif
+        else (Không)
+           |Hệ thống|
+           :Mã hóa mật khẩu (Hash Password);
+           :Lưu thông tin User vào DB;
+        endif
+     endif
+   repeat while (Lưu User thành công?) is (Không)
+
+split again
+   |Người dùng|
+   :Chọn "Đăng ký qua Google";
+
+   |Hệ thống|
+   :Chuyển hướng yêu cầu đến Google;
+
+   |Google (Bên thứ 3)|
+   :Hiển thị màn hình chọn tài khoản Google;
+   :Xác thực người dùng;
+
+   if (Xác thực thành công?) then (Có)
+     |Hệ thống|
+     :Nhận thông tin Email từ Google;
+     if (Email đã tồn tại?) then (Có)
+       :Thông báo "Tài khoản đã tồn tại, vui lòng đăng nhập";
+       |Người dùng|
+       :Chuyển hướng đến Trang đăng nhập;
+       stop
+     else (Không)
+       |Hệ thống|
+       :Lưu thông tin User mới vào DB\n(Tạo tài khoản tự động);
+     endif
+   else (Không)
+     |Google (Bên thứ 3)|
+     :Trả về lỗi xác thực;
+
+     |Hệ thống|
+     :Hiển thị lỗi "Xác thực thất bại";
+     |Người dùng|
+     stop
+   endif
+end split
+
+' --- Bước chung sau khi lưu DB thành công ---
+|Hệ thống|
+:Tạo Access Token & Refresh Token;
+:Lưu Refresh Token vào HttpOnly Cookie;
+:Trả về kết quả thành công (HTTP 201);
+
+|Người dùng|
+:Hiển thị thông báo "Đăng ký thành công";
+:Chuyển hướng về Trang đăng nhập;
+stop
+@enduml
