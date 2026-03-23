@@ -1,0 +1,75 @@
+@startuml
+!theme plain
+skinparam SequenceMessageAlign center
+skinparam linetype ortho
+
+title Sequence Diagram - Chuyển đổi Giỏ hàng thành Đơn hàng
+
+actor User
+boundary UI
+control OrderController
+control OrderService
+control PaymentStrategy
+entity CartRepository
+entity OrderRepository
+entity ProductRepository
+
+User -> UI : Nhấn "Xác nhận đặt hàng"
+activate UI
+
+UI -> OrderController : POST /api/checkout\n(paymentMethod, ...)
+activate OrderController
+
+OrderController -> OrderService : checkout(userId, requestData)
+activate OrderService
+
+OrderService -> CartRepository : findByUserId(userId)
+activate CartRepository
+CartRepository --> OrderService : Trả về Cart & CartItems
+deactivate CartRepository
+
+OrderService -> OrderService : Tính toán tổng tiền
+
+OrderService -> OrderRepository : save(order) (Lưu tạm lấy ID)
+activate OrderRepository
+OrderRepository --> OrderService : Trả về savedOrder
+deactivate OrderRepository
+
+OrderService -> PaymentStrategy : pay(savedOrder, paymentInfo)
+activate PaymentStrategy
+PaymentStrategy --> OrderService : paymentResult (Thành công)
+deactivate PaymentStrategy
+
+loop Duyệt qua từng CartItem
+    OrderService -> OrderService : Khởi tạo OrderItem
+
+    OrderService -> ProductRepository : Cập nhật giảm tồn kho (stock)
+    activate ProductRepository
+    ProductRepository --> OrderService : Thành công
+    deactivate ProductRepository
+
+    OrderService -> OrderService : Thêm OrderItem vào Order
+end
+
+OrderService -> OrderRepository : save(savedOrder) (Lưu chính thức)
+activate OrderRepository
+OrderRepository --> OrderService : finalOrder
+deactivate OrderRepository
+
+loop Duyệt qua từng CartItem
+    OrderService -> CartRepository : deleteCartItem(itemId)
+    activate CartRepository
+    CartRepository --> OrderService : Thành công
+    deactivate CartRepository
+end
+
+OrderService --> OrderController : Trả về thông tin Order (orderCode)
+deactivate OrderService
+
+OrderController --> UI : HTTP 200 OK (Thành công)
+deactivate OrderController
+
+UI --> User : Hiển thị màn hình "Đặt hàng thành công"
+deactivate UI
+
+@enduml

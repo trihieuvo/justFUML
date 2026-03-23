@@ -1,143 +1,109 @@
 @startuml
 !theme plain
-skinparam maxMessageSize 150
-skinparam ParticipantPadding 20
-skinparam BoxPadding 10
-
-actor "Người dùng" as User
-participant "UI\n(Trang Giỏ hàng)" as UI
-box "Backend System" #F9F9F9
-participant "CartController" as Controller
-participant "CartService" as Service
-participant "CartRepository" as CartRepo
-participant "ProductRepository" as ProductRepo
-end box
+skinparam SequenceMessageAlign center
+skinparam linetype ortho
 
 title Sequence Diagram - Quản lý Giỏ hàng (CRUD CartItem)
+
+actor User
+boundary UI
+control CartController
+control CartService
+entity CartRepository
+entity ProductRepository
 
 ' ==========================================
 ' LUỒNG 1: THÊM SẢN PHẨM VÀO GIỎ HÀNG
 ' ==========================================
 group Thêm sản phẩm (Add Item)
-    User -> UI: Nhấn "Thêm vào giỏ" (productId, quantity)
+    User -> UI : Nhấn "Thêm vào giỏ"
     activate UI
-    UI -> Controller: POST /api/cart/add
-    activate Controller
-    Controller -> Service: addItemToCart(userId, productId, quantity)
-    activate Service
 
-    Service -> CartRepo: findByUserId(userId)
-    activate CartRepo
-    CartRepo --> Service: Optional<Cart>
-    deactivate CartRepo
+    UI -> CartController : POST /api/cart/add
+    activate CartController
 
-    opt Cart không tồn tại
-        Service -> CartRepo: createCartForUser(user)
-        activate CartRepo
-        CartRepo --> Service: Cart mới
-        deactivate CartRepo
+    CartController -> CartService : addItemToCart(userId, productId, quantity)
+    activate CartService
+
+    CartService -> CartRepository : findByUserId(userId)
+    activate CartRepository
+    CartRepository --> CartService : Optional<Cart>
+    deactivate CartRepository
+
+    alt Nếu Cart không tồn tại
+        CartService -> CartRepository : createCartForUser(user)
+        activate CartRepository
+        CartRepository --> CartService : Cart mới
+        deactivate CartRepository
     end
 
-    Service -> ProductRepo: findById(productId)
-    activate ProductRepo
-    ProductRepo --> Service: Optional<Product>
-    deactivate ProductRepo
+    CartService -> ProductRepository : findById(productId)
+    activate ProductRepository
+    ProductRepository --> CartService : Optional<Product>
+    deactivate ProductRepository
 
-    alt Tồn kho < quantity
-        Service --> Controller: throw RuntimeException("Vượt quá số lượng tồn kho")
-    else Tồn kho hợp lệ
-        Service -> CartRepo: findCartItem(cartId, productId)
-        activate CartRepo
-        CartRepo --> Service: Optional<CartItem>
-        deactivate CartRepo
+    alt Nếu Tồn kho < quantity
+        CartService --> CartController : throw RuntimeException(Lỗi tồn kho)
+    else Nếu Tồn kho hợp lệ
+        CartService -> CartRepository : findCartItem(cartId, productId)
+        activate CartRepository
+        CartRepository --> CartService : Optional<CartItem>
+        deactivate CartRepository
 
         alt Sản phẩm đã có trong giỏ
-            Service -> Service: Tính số lượng mới \n(newQuantity = old + quantity)
-            opt newQuantity > tồn kho
-                Service --> Controller: throw RuntimeException
-            end
-            Service -> CartRepo: saveCartItem(item) (Cập nhật)
-            activate CartRepo
-            CartRepo --> Service: void
-            deactivate CartRepo
+            CartService -> CartService : Tính số lượng mới
+            CartService -> CartRepository : saveCartItem(item)
+            activate CartRepository
+            CartRepository --> CartService : Thành công
+            deactivate CartRepository
         else Sản phẩm chưa có trong giỏ
-            Service -> CartRepo: saveCartItem(newItem) (Tạo mới)
-            activate CartRepo
-            CartRepo --> Service: void
-            deactivate CartRepo
+            CartService -> CartRepository : saveCartItem(newItem)
+            activate CartRepository
+            CartRepository --> CartService : Thành công
+            deactivate CartRepository
         end
 
-        Service -> Service: buildCartResponse(cart)
-        Service --> Controller: Map<String, Object> (Dữ liệu giỏ hàng mới)
+        CartService -> CartService : buildCartResponse(cart)
+        CartService --> CartController : Trả về dữ liệu giỏ hàng
     end
 
-    Controller --> UI: 200 OK (Cart Data) / 400 Bad Request
-    deactivate Service
-    deactivate Controller
-    UI --> User: Cập nhật UI giỏ hàng / Hiển thị lỗi
+    CartController --> UI : HTTP 200 OK / 400 Bad Request
+    deactivate CartService
+    deactivate CartController
+
+    UI --> User : Cập nhật giỏ hàng / Báo lỗi
     deactivate UI
 end
 
 ' ==========================================
-' LUỒNG 2: CẬP NHẬT SỐ LƯỢNG
-' ==========================================
-group Cập nhật số lượng (Update Quantity)
-    User -> UI: Tăng/Giảm số lượng trên giao diện
-    activate UI
-    UI -> Controller: PUT /api/cart/update
-    activate Controller
-    Controller -> Service: updateCartItemQuantity(userId, productId, quantity)
-    activate Service
-
-    Service -> CartRepo: findByUserId(userId)
-    Service -> CartRepo: findCartItem(cartId, productId)
-
-    alt Số lượng yêu cầu > tồn kho
-        Service --> Controller: throw RuntimeException("Vượt quá tồn kho")
-    else Hợp lệ
-        Service -> CartRepo: saveCartItem(item) với số lượng mới
-        activate CartRepo
-        CartRepo --> Service: void
-        deactivate CartRepo
-
-        Service -> Service: buildCartResponse(cart)
-        Service --> Controller: Map<String, Object>
-    end
-
-    Controller --> UI: 200 OK / 400 Error
-    deactivate Service
-    deactivate Controller
-    UI --> User: Cập nhật tổng tiền / Hiển thị lỗi
-    deactivate UI
-end
-
-' ==========================================
-' LUỒNG 3: XÓA SẢN PHẨM KHỎI GIỎ
+' LUỒNG 2: XÓA SẢN PHẨM KHỎI GIỎ
 ' ==========================================
 group Xóa sản phẩm (Remove Item)
-    User -> UI: Nhấn nút "Xóa"
+    User -> UI : Nhấn "Xóa sản phẩm"
     activate UI
-    UI -> Controller: DELETE /api/cart/remove
-    activate Controller
-    Controller -> Service: removeItemFromCart(userId, productId)
-    activate Service
 
-    Service -> CartRepo: findByUserId(userId)
-    Service -> CartRepo: findCartItem(cartId, productId)
+    UI -> CartController : DELETE /api/cart/remove
+    activate CartController
 
-    Service -> CartRepo: deleteCartItem(itemId)
-    activate CartRepo
-    CartRepo --> Service: void
-    deactivate CartRepo
+    CartController -> CartService : removeItemFromCart(userId, productId)
+    activate CartService
 
-    Service -> Service: buildCartResponse(cart)
-    Service --> Controller: Map<String, Object>
+    CartService -> CartRepository : findByUserId(userId)
+    CartService -> CartRepository : findCartItem(cartId, productId)
 
-    Controller --> UI: 200 OK
-    deactivate Service
-    deactivate Controller
-    UI --> User: Xóa item khỏi giao diện
+    CartService -> CartRepository : deleteCartItem(itemId)
+    activate CartRepository
+    CartRepository --> CartService : Thành công
+    deactivate CartRepository
+
+    CartService -> CartService : buildCartResponse(cart)
+    CartService --> CartController : Trả về dữ liệu giỏ hàng mới
+
+    CartController --> UI : HTTP 200 OK
+    deactivate CartService
+    deactivate CartController
+
+    UI --> User : Giao diện đã xóa sản phẩm
     deactivate UI
 end
-
 @enduml
