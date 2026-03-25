@@ -1,0 +1,83 @@
+@startuml
+!theme plain
+autonumber
+skinparam SequenceMessageAlign center
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+skinparam linetype ortho
+
+title Sequence Diagram - Xem chi tiết sản phẩm (Java Servlet & JPA)
+
+actor "Khách/Thành viên (User)" as User
+boundary "Giao diện (UI)" as UI
+control "ProductServlet" as Servlet
+control "ProductService" as Service
+entity "ProductDAO (JPA)" as ProductDAO
+entity "ReviewDAO (JPA)" as ReviewDAO
+database "Database" as DB
+
+User -> UI : Click vào một sản phẩm
+activate UI
+
+UI -> Servlet : AJAX GET /api/v1/products/{id}
+activate Servlet
+
+Servlet -> Servlet : Trích xuất productId từ URL
+
+Servlet -> Service : getProductDetail(productId)
+activate Service
+
+' --- LẤY THÔNG TIN SẢN PHẨM VÀ HÌNH ẢNH ---
+Service -> ProductDAO : findByIdWithImages(productId)
+activate ProductDAO
+note right of ProductDAO
+  Dùng JPQL "JOIN FETCH p.images"
+  để lấy luôn danh sách ảnh trong 1 query,
+  tránh lỗi Lazy Loading.
+end note
+
+ProductDAO -> DB : SELECT p, i FROM products p \nLEFT JOIN product_images i ... WHERE p.id = ? AND p.status = true
+activate DB
+DB --> ProductDAO : ResultSet
+deactivate DB
+
+ProductDAO --> Service : Trả về Product (kèm List<ProductImage>)
+deactivate ProductDAO
+
+alt Không tìm thấy sản phẩm (hoặc status = false)
+    Service --> Servlet : throw CustomException("Sản phẩm không tồn tại")
+    Servlet --> UI : HTTP 404 Not Found
+    UI --> User : Hiển thị trang lỗi 404 hoặc thông báo
+else Sản phẩm hợp lệ
+    ' --- LẤY THÔNG TIN ĐÁNH GIÁ (REVIEWS) ---
+    Service -> ReviewDAO : findByProductId(productId, pageData)
+    activate ReviewDAO
+    note right of ReviewDAO
+      Review thường có số lượng lớn,
+      nên tách riêng truy vấn và có phân trang.
+    end note
+
+    ReviewDAO -> DB : SELECT * FROM reviews r \nWHERE r.product_id = ? LIMIT ...
+    activate DB
+    DB --> ReviewDAO : ResultSet
+    deactivate DB
+
+    ReviewDAO --> Service : Trả về List<Review>
+    deactivate ReviewDAO
+
+    ' --- MAP DATA SANG DTO ---
+    Service -> Service : Map Product, List<ProductImage> \nvà List<Review> sang ProductDetailDTO
+
+    Service --> Servlet : Trả về ProductDetailDTO
+    deactivate Service
+
+    Servlet -> Servlet : Chuyển ProductDetailDTO thành JSON
+
+    Servlet --> UI : HTTP 200 OK (Kèm JSON Data)
+    deactivate Servlet
+
+    UI --> User : Render chi tiết sản phẩm\n(Tên, Giá, Mô tả, Thông số, \nGallery Ảnh, Danh sách Đánh giá)
+    deactivate UI
+end
+
+@enduml
