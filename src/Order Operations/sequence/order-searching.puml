@@ -1,0 +1,69 @@
+@startuml
+!theme plain
+autonumber
+skinparam SequenceMessageAlign center
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+skinparam linetype ortho
+
+title Sequence Diagram - Tra cứu đơn hàng công khai (Java Servlet & JPA)
+
+actor "Khách/Thành viên (Guest/User)" as User
+boundary "Giao diện (UI)" as UI
+control "OrderServlet" as Servlet
+control "OrderService" as Service
+entity "OrderDAO (JPA)" as DAO
+database "Database" as DB
+
+User -> UI : Nhập Mã đơn hàng (orderCode)\nvà Email\nNhấn "Tra cứu"
+activate UI
+
+UI -> Servlet : AJAX GET /api/v1/orders/track\n?orderCode=...&email=...
+activate Servlet
+
+Servlet -> Servlet : Lấy tham số orderCode và email\ntừ HttpServletRequest
+
+Servlet -> Service : trackOrder(orderCode, email)
+activate Service
+
+' --- TRUY VẤN ĐƠN HÀNG VÀ CHI TIẾT ---
+Service -> DAO : findByOrderCodeAndEmail(orderCode, email)
+activate DAO
+
+note right of DAO
+  Sử dụng JPQL JOIN FETCH để lấy Đơn hàng
+  cùng với chi tiết (OrderItems) và Sản phẩm,
+  tránh lỗi Lazy Loading khi map DTO.
+end note
+
+DAO -> DB : SELECT o FROM orders o \nLEFT JOIN FETCH o.items i \nLEFT JOIN FETCH i.product \nWHERE o.orderCode = ? AND o.email = ?
+activate DB
+DB --> DAO : ResultSet
+deactivate DB
+
+DAO --> Service : Trả về Order Entity (hoặc null)
+deactivate DAO
+
+alt Không tìm thấy Đơn hàng (Sai mã hoặc sai Email)
+    Service --> Servlet : throw CustomException("Không tìm thấy đơn hàng")
+    Servlet --> UI : HTTP 404 Not Found / 400 Bad Request
+    UI --> User : Hiển thị lỗi "Mã đơn hàng và email không khớp"
+else Tìm thấy Đơn hàng
+    ' --- CHUYỂN ĐỔI SANG DTO ---
+    Service -> Service : Map Order sang OrderTrackingDTO\n(Bao gồm: orderCode, status, recipientName,\nshippingAddress, totalAmount, paymentMethod)
+
+    Service -> Service : Map List<OrderItem> sang List<OrderItemDTO>\n(Bao gồm: Tên SP, Ảnh Thumbnail, Số lượng, Giá)
+
+    Service --> Servlet : Trả về OrderTrackingDTO
+    deactivate Service
+
+    Servlet -> Servlet : Chuyển OrderTrackingDTO thành JSON
+
+    Servlet --> UI : HTTP 200 OK (Kèm JSON Data)
+    deactivate Servlet
+
+    UI --> User : Hiển thị chi tiết Đơn hàng\nvà Trạng thái (OrderStatus) hiện tại
+    deactivate UI
+end
+
+@enduml
