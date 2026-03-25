@@ -6,92 +6,107 @@ skinparam ParticipantPadding 20
 skinparam BoxPadding 10
 skinparam linetype ortho
 
-title Sequence Diagram - Cập nhật thông tin/Địa chỉ (Thêm/Sửa & Đặt mặc định)
+title Sequence Diagram - Cập nhật thông tin/Địa chỉ (Java Servlet & JPA)
 
 actor "Thành viên (User)" as User
-boundary "Giao diện (UI)" as UI
-control "AddressController" as Controller
+boundary "Giao diện (UI / JSP)" as UI
+control "AddressServlet" as Servlet
 control "AddressService" as Service
-entity "AddressRepository" as Repo
+entity "AddressDAO (JPA)" as DAO
 database "Database" as DB
 
-User -> UI : Điền thông tin địa chỉ\n(Tên, SĐT, Đường, Xã, Tỉnh, Đặt làm mặc định)\nNhấn "Lưu"
+User -> UI : Điền form địa chỉ & Tích "Đặt làm mặc định"\nNhấn "Lưu"
 activate UI
 
-alt Luồng: Thêm địa chỉ mới
-    UI -> Controller : POST /api/v1/addresses\n(JSON payload: AddressRequest)
-    activate Controller
+alt Luồng: Thêm địa chỉ mới (POST)
+    UI -> Servlet : AJAX POST /api/addresses\n(JSON payload)
+    activate Servlet
 
-    Controller -> Service : addAddress(userId, request)
+    Servlet -> Servlet : Đọc JSON từ HttpServletRequest\nLấy userId từ Session/JWT
+
+    Servlet -> Service : addAddress(userId, addressDTO)
     activate Service
 
-    Service -> Service : Khởi tạo đối tượng Address mới\nMap thông tin từ request (recipientName, phoneNumber...)
+    Service -> Service : em.getTransaction().begin()
+    Service -> Service : Map DTO sang Entity Address mới
 
-else Luồng: Cập nhật địa chỉ hiện tại
-    UI -> Controller : PUT /api/v1/addresses/{id}\n(JSON payload: AddressRequest)
+else Luồng: Cập nhật địa chỉ (PUT)
+    UI -> Servlet : AJAX PUT /api/addresses?id={id}\n(JSON payload)
 
-    Controller -> Service : updateAddress(addressId, userId, request)
+    Servlet -> Servlet : Đọc JSON từ HttpServletRequest\nLấy userId từ Session/JWT
 
-    Service -> Repo : findByIdAndUserId(addressId, userId)
-    activate Repo
-    Repo --> Service : Optional<Address>
-    deactivate Repo
+    Servlet -> Service : updateAddress(addressId, userId, addressDTO)
 
-    alt Không tìm thấy địa chỉ (hoặc không thuộc về User)
-        Service --> Controller : throw Exception("Không tìm thấy địa chỉ")
-        Controller --> UI : HTTP 404/403 Lỗi truy cập
+    Service -> Service : em.getTransaction().begin()
+
+    Service -> DAO : findByIdAndUserId(addressId, userId)
+    activate DAO
+    DAO --> Service : Managed Entity (Address)
+    deactivate DAO
+
+    alt Không tìm thấy hoặc Không thuộc quyền sở hữu
+        Service -> Service : em.getTransaction().rollback()
+        Service --> Servlet : throw CustomException("Not Found / Forbidden")
+        Servlet --> UI : HTTP 404 / 403 (JSON Error)
         UI --> User : Hiển thị thông báo lỗi
-    else Tìm thấy địa chỉ hợp lệ
-        Service -> Service : Cập nhật các trường (streetAddress, ward, province...)
+    else Dữ liệu hợp lệ
+        Service -> Service : Cập nhật các trường (streetAddress, ward...)
     end
 end
 
-' --- XỬ LÝ LOGIC ĐỊA CHỈ MẶC ĐỊNH ---
-alt Nếu người dùng chọn isDefault = true
-    Service -> Repo : findDefaultAddressByUserId(userId)
-    activate Repo
-    Repo -> DB : SELECT * FROM addresses\nWHERE user_id = ? AND is_default = true
+' --- LOGIC XỬ LÝ ĐỊA CHỈ MẶC ĐỊNH ---
+alt Nếu addressDTO.isDefault == true
+    Service -> DAO : findDefaultAddress(userId)
+    activate DAO
+    DAO -> DB : SELECT * FROM addresses\nWHERE user_id = ? AND is_default = true
     activate DB
-    DB --> Repo : Kết quả (oldDefaultAddress)
+    DB --> DAO : oldDefaultAddress
     deactivate DB
-    Repo --> Service : Trả về oldDefaultAddress (nếu có)
-    deactivate Repo
+    DAO --> Service : oldDefaultAddress
+    deactivate DAO
 
-    opt Nếu tồn tại địa chỉ mặc định cũ (oldDefaultAddress != null)
+    opt Nếu tồn tại oldDefaultAddress
         Service -> Service : oldDefaultAddress.setIsDefault(false)
-
-        Service -> Repo : save(oldDefaultAddress)
-        activate Repo
-        Repo -> DB : UPDATE addresses SET is_default = false
+        Service -> DAO : merge(oldDefaultAddress)
+        activate DAO
+        DAO -> DB : UPDATE addresses SET is_default = false
         activate DB
-        DB --> Repo : Thành công
+        DB --> DAO : Success
         deactivate DB
-        Repo --> Service : Trả về kết quả
-        deactivate Repo
+        DAO --> Service : Success
+        deactivate DAO
     end
 
     Service -> Service : addressToSave.setIsDefault(true)
-else Nếu isDefault = false
+else Nếu addressDTO.isDefault == false
     Service -> Service : addressToSave.setIsDefault(false)
 end
 
-' --- LƯU ĐỊA CHỈ VÀO DATABASE ---
-Service -> Repo : save(addressToSave)
-activate Repo
-Repo -> DB : INSERT / UPDATE vào bảng addresses
-activate DB
-DB --> Repo : Thành công
-deactivate DB
-Repo --> Service : Trả về Address đã được lưu
-deactivate Repo
+' --- LƯU THAY ĐỔI VÀ ĐÓNG TRANSACTION ---
+alt Là thao tác Thêm mới
+    Service -> DAO : persist(addressToSave)
+else Là thao tác Cập nhật
+    Service -> DAO : merge(addressToSave)
+end
 
-Service --> Controller : Trả về AddressResponse
+activate DAO
+DAO -> DB : INSERT / UPDATE
+activate DB
+DB --> DAO : Success
+deactivate DB
+DAO --> Service : savedAddress
+deactivate DAO
+
+Service -> Service : em.getTransaction().commit()
+
+Service --> Servlet : AddressDTO (Dữ liệu đã lưu)
 deactivate Service
 
-Controller --> UI : HTTP 200 OK / 201 Created (Kèm AddressResponse)
-deactivate Controller
+Servlet -> Servlet : Chuyển AddressDTO thành JSON\nGhi vào HttpServletResponse
+Servlet --> UI : HTTP 200 OK / 201 Created (JSON Response)
+deactivate Servlet
 
-UI --> User : Hiển thị thông báo "Lưu địa chỉ thành công"\n& Cập nhật lại danh sách địa chỉ trên UI
+UI --> User : Thông báo "Lưu thành công"\n& Cập nhật danh sách địa chỉ trên màn hình
 deactivate UI
 
 @enduml
