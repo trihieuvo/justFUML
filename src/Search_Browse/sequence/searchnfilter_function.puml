@@ -1,0 +1,56 @@
+@startuml
+!theme plain
+autonumber
+skinparam SequenceMessageAlign center
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+skinparam linetype ortho
+
+title Sequence Diagram - Tìm kiếm & Lọc sản phẩm (Java Servlet & JPA)
+
+actor "Khách/Thành viên (User)" as User
+boundary "Giao diện (UI)" as UI
+control "ProductServlet" as Servlet
+control "ProductService" as Service
+entity "ProductDAO (JPA)" as DAO
+database "Database" as DB
+
+User -> UI : Nhập từ khóa, chọn bộ lọc\n(Giá, Hãng, Danh mục)\nNhấn "Tìm kiếm" / "Lọc"
+activate UI
+
+UI -> Servlet : AJAX GET /api/v1/products\n?keyword=...&brandId=...&categoryId=...\n&minPrice=...&maxPrice=...&page=1
+activate Servlet
+
+Servlet -> Servlet : Đọc query parameters từ HttpServletRequest\n(Parse String sang Long, BigDecimal, Integer...)
+
+Servlet -> Service : searchAndFilterProducts(criteria, pageRequest)
+activate Service
+
+Service -> DAO : findByCriteria(criteria, pageRequest)
+activate DAO
+
+DAO -> DAO : Khởi tạo CriteriaBuilder & CriteriaQuery\nThêm các điều kiện (WHERE) động:\n1. status = true (Chỉ lấy SP đang bán)\n2. name LIKE %keyword%\n3. brand_id = ?\n4. category_id = ?\n5. price BETWEEN min AND max
+
+DAO -> DB : Thực thi Query: SELECT * FROM products p\nLEFT JOIN brands b ... LEFT JOIN categories c ...\nWHERE ... LIMIT ... OFFSET ...
+activate DB
+DB --> DAO : ResultSet
+deactivate DB
+
+DAO -> DAO : Map ResultSet thành List<Product> (Managed Entities)
+DAO --> Service : Trả về List<Product> (kèm tổng số lượng để phân trang)
+deactivate DAO
+
+Service -> Service : Chuyển đổi List<Product> sang List<ProductDTO>\n(Map các thông tin cần thiết: id, name, price,\nthumbnailUrl, brand.name, category.name)
+
+Service --> Servlet : Trả về PagedResponse<ProductDTO>
+deactivate Service
+
+Servlet -> Servlet : Chuyển PagedResponse thành chuỗi JSON\n(Dùng Gson/Jackson) và ghi vào HttpServletResponse
+
+Servlet --> UI : HTTP 200 OK (Kèm JSON Data)
+deactivate Servlet
+
+UI --> User : Render danh sách sản phẩm mới\nCập nhật lại giao diện (Số trang, Tổng SP tìm thấy)
+deactivate UI
+
+@enduml
