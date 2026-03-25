@@ -1,0 +1,66 @@
+@startuml
+!theme plain
+skinparam linetype ortho
+skinparam ActivityBackgroundColor #f9f9f9
+skinparam ActivityBorderColor #333333
+
+title Activity Diagram - Hủy đơn hàng)
+
+|Người dùng|
+start
+:Truy cập trang "Lịch sử đơn hàng"\nhoặc "Chi tiết đơn hàng";
+:Nhấn nút "Hủy đơn hàng";
+:Xác nhận yêu cầu hủy;
+
+|Hệ thống|
+:Servlet nhận yêu cầu PUT/POST\n(kèm orderId và userId);
+:Khởi tạo EntityManager;
+:Bắt đầu Transaction\n(em.getTransaction().begin());
+:Truy xuất Đơn hàng từ DB\n(OrderDAO.findByIdAndUserId);
+
+if (Đơn hàng tồn tại?) then (Không)
+  :Rollback Transaction;
+  :Ném ngoại lệ "Không tìm thấy đơn hàng";
+  |Người dùng|
+  :Hiển thị thông báo lỗi;
+  stop
+else (Có)
+  |Hệ thống|
+  if (Trạng thái là PENDING\nhoặc PROCESSING?) then (Không)
+    :Rollback Transaction;
+    :Ném ngoại lệ "Đơn hàng đã giao hoặc đã hủy,\nkhông thể thực hiện thao tác này";
+    |Người dùng|
+    :Hiển thị thông báo lỗi\n(VD: Đơn hàng đang giao không thể hủy);
+    stop
+  else (Có)
+    |Hệ thống|
+    :Cập nhật trạng thái Đơn hàng\n(order.setStatus(CANCELLED));
+
+    ' --- Xử lý hoàn trả số lượng tồn kho ---
+    :Lấy danh sách chi tiết đơn (order.getItems());
+    repeat
+      :Lấy OrderItem hiện tại;
+      :Lấy số lượng đã mua (quantity);
+      :Lấy Sản phẩm tương ứng (Product);
+      :Hoàn trả tồn kho:\nproduct.setStockQuantity(stock + quantity);
+      :Cập nhật Product vào DB\n(ProductDAO.merge(product));
+    repeat while (Còn OrderItem trong danh sách?) is (Có)
+
+    ' --- Lưu đơn hàng và đóng Transaction ---
+    :Cập nhật Đơn hàng vào DB\n(OrderDAO.merge(order));
+    :Commit Transaction\n(em.getTransaction().commit());
+
+    fork
+      :Trả về kết quả thành công (HTTP 200 OK);
+    fork again
+      :Tiến trình nền (Async):\nGửi Email thông báo xác nhận hủy đơn;
+    end fork
+
+    |Người dùng|
+    :Cập nhật giao diện (Trạng thái chuyển sang Đã hủy);
+    :Hiển thị thông báo "Hủy đơn hàng thành công";
+    stop
+  endif
+endif
+
+@enduml
