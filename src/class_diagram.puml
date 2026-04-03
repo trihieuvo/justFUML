@@ -111,6 +111,12 @@ package utesoundshop {
         - LocalDateTime updatedAt
     }
 
+    class Inventory {
+        - Long id
+        - Integer stockQuantity
+        - LocalDateTime updatedAt
+    }
+
     class ProductImage {
         - Long id
         - String imageUrl
@@ -187,6 +193,7 @@ package utesoundshop {
     Cart "1" *--> "*" CartItem : contains
     Order "1" *--> "*" OrderItem : contains
     Product "1" *--> "*" ProductImage : has
+    Product "1" *--> "1" Inventory : manages stock
     Product "1" *--> "*" Review : receives
     Review "1" *--> "*" ReviewLike : receives
     Category "1" *--> "*" Category : parent/children
