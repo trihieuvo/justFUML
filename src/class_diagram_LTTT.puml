@@ -1,0 +1,226 @@
+@startuml
+!theme plain
+left to right direction
+skinparam classAttributeIconSize 0
+
+' Cấu hình phông chữ lớn để dễ đọc trong Word
+skinparam defaultFontSize 40
+skinparam classFontSize 30
+skinparam enumFontSize 40
+skinparam arrowFontSize 40
+skinparam titleFontSize 50 ' Tăng kích thước phông tiêu đề chính
+skinparam packageFontSize 50
+
+' Tăng khoảng cách để nhãn mô tả không bị dính vào nhau khi chữ to lên
+skinparam nodesep 180
+skinparam ranksep 170
+skinparam Padding 15
+
+title Sơ đồ lớp (Entity Class Diagram) - AudioGear E-Commerce
+
+package "utesoundshop" {
+
+    class User {
+        - Long id
+        - String username
+        - String fullName
+        - String email
+        - String passwordHash
+        - String phoneNumber
+        - UserRole role
+        - UserStatus status
+        - String avatar
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class Address {
+        - Long id
+        - String recipientName
+        - String phoneNumber
+        - String streetAddress
+        - String province
+        - String provinceCode
+        - String district
+        - String districtCode
+        - String ward
+        - String wardCode
+        - Boolean isDefault
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class Product {
+        - Long id
+        - String name
+        - String description
+        - BigDecimal price
+        - String thumbnailUrl
+        - String specifications
+        - Boolean status
+        - Integer stockQuantity
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class ProductImage {
+        - Long id
+        - String imageUrl
+        - String altText
+        - Boolean isPrimary
+        - LocalDateTime createdAt
+    }
+
+    class Brand {
+        - Long id
+        - String name
+        - String description
+        - String logoUrl
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class Category {
+        - Long id
+        - String name
+        - String description
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class Cart {
+        - Long id
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class CartItem {
+        - Long id
+        - Integer quantity
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class Order {
+        - Long id
+        - String orderCode
+        - String email
+        - String recipientName
+        - String phoneNumber
+        - String streetAddress
+        - String city
+        - OrderStatus status
+        - PaymentStrategy paymentStrategy
+        - BigDecimal totalAmount
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class OrderItem {
+        - Long id
+        - Integer quantity
+        - BigDecimal price
+        - LocalDateTime createdAt
+    }
+
+    class Review {
+        - Long id
+        - Integer rating
+        - String comment
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+
+    class ReviewLike {
+        - Long id
+        - LocalDateTime createdAt
+    }
+
+    class Voucher {
+        - Long id
+        - String code
+        - DiscountType discountType
+        - BigDecimal discountValue
+        - Integer maxUsage
+        - BigDecimal minOrderValue
+        - LocalDateTime expiryDate
+        - VoucherStatus status
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+    }
+}
+
+package "utesoundshop.enums" {
+    enum UserRole {
+        customer
+        admin
+    }
+
+    enum UserStatus {
+        active
+        locked
+        pending
+    }
+
+    enum OrderStatus {
+        PENDING
+        PROCESSING
+        SHIPPED
+        DELIVERED
+        CANCELLED
+    }
+
+    enum DiscountType {
+        PERCENTAGE
+        FIXED_AMOUNT
+    }
+
+    enum VoucherStatus {
+        ACTIVE
+        INACTIVE
+        EXPIRED
+    }
+}
+
+' Relationships - Sử dụng mũi tên dài (---) để tạo không gian cho nhãn mô tả
+User "1" --- "0..*" Address : "has"
+User "1" --- "0..1" Cart : "owns"
+User "1" --- "0..*" Order : "places"
+User "1" --- "0..*" Review : "writes"
+User "1" --- "0..*" ReviewLike : "performs"
+
+Product "1" --- "0..*" ProductImage : "contains"
+Product "1" --- "0..*" Review : "receives"
+Product "1" --- "0..*" CartItem : "included in"
+Product "1" --- "0..*" OrderItem : "part of"
+
+Brand "1" --- "0..*" Product : "manufactures"
+Category "1" --- "0..*" Product : "categorizes"
+Category "1" --- "0..*" Category : "sub-category"
+
+Cart "1" --- "0..*" CartItem : "contains"
+CartItem "*" --- "1" Product : "references"
+
+Order "1" --- "0..*" OrderItem : "contains"
+Order "*" --- "1" User : "belongs to"
+Order "*" --- "0..1" Voucher : "applies"
+
+OrderItem "*" --- "1" Product : "references"
+
+Review "*" --- "1" User : "authored by"
+Review "*" --- "1" Product : "for product"
+Review "1" --- "0..*" ReviewLike : "liked by"
+
+ReviewLike "*" --- "1" User : "by user"
+ReviewLike "*" --- "1" Review : "on review"
+
+Voucher "1" --- "0..*" Order : "used in"
+
+' Enum usage - Sử dụng liên kết ngắn để Enums nằm gần Class liên quan
+User -up- UserRole
+User -up- UserStatus
+Order -right- OrderStatus
+Voucher -left- DiscountType
+Voucher -left- VoucherStatus
+
+@enduml
