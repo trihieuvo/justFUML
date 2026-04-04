@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conceptual ERD v2 - AudioGear E-Commerce</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
+
+        :root {
+            --bg-color: #f1f5f9;
+            --entity-bg: #1e293b;
+            --entity-text: #ffffff;
+            --rr-bg: #334155;
+            --line-color: #94a3b8;
+            --diamond-size: 36px;
+            --diamond-white: #ffffff;
+            --diamond-black: #000000;
+        }
+
+        body {
+            margin: 0;
+            padding: 40px;
+            background-color: var(--bg-color);
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { color: #0f172a; margin-bottom: 8px; }
+        .subtitle { color: #64748b; margin-bottom: 40px; font-size: 14px; }
+
+        #svg-canvas {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .entity-rect {
+            fill: var(--entity-bg);
+            stroke: #0f172a;
+            stroke-width: 1.5;
+            rx: 6;
+        }
+
+        .entity-label {
+            fill: var(--entity-text);
+            font-size: 13px;
+            font-weight: 600;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            text-transform: uppercase;
+        }
+
+        .rr-rect {
+            fill: var(--rr-bg);
+            stroke: #0f172a;
+            stroke-width: 1;
+            rx: 4;
+        }
+
+        .rr-label {
+            fill: #f8fafc;
+            font-size: 11px;
+            font-weight: 500;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+
+        .relation-line {
+            stroke: var(--line-color);
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        .rr-connector {
+            stroke: #94a3b8;
+            stroke-width: 1;
+            stroke-dasharray: 3,2;
+        }
+
+        .diamond-border {
+            stroke: #0f172a;
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        .cardinality {
+            fill: #475569;
+            font-size: 14px;
+            font-weight: 600;
+            text-anchor: middle;
+        }
+
+        .legend {
+            margin-top: 30px;
+            display: flex;
+            gap: 24px;
+            padding: 12px 24px;
+            background: white;
+            border-radius: 99px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #475569; }
+    </style>
+</head>
+<body>
+    <h1>AudioGear E-Commerce Conceptual ERD (v2.1)</h1>
+    <div class="subtitle">Sơ đồ Thực thể - Mối quan hệ Khái niệm (Đã tách bạch các vùng chồng chéo)</div>
+
+    <svg id="svg-canvas" width="1350" height="1000" viewBox="0 0 1350 1000">
+        <rect width="100%" height="100%" fill="white" rx="16" />
+        <g id="links"></g>
+        <g id="nodes"></g>
+    </svg>
+
+    <div class="legend">
+        <div class="legend-item"><div style="width:16px; height:16px; border:1.5px solid black; background:white; transform:rotate(45deg);"></div> Quan hệ 1</div>
+        <div class="legend-item"><div style="width:16px; height:16px; border:1.5px solid black; background:black; transform:rotate(45deg);"></div> Quan hệ N</div>
+        <div class="legend-item"><div style="width:20px; height:12px; background:#1e293b; border-radius:3px;"></div> Thực thể</div>
+        <div class="legend-item"><div style="width:20px; height:12px; background:#334155; border-radius:2px;"></div> Bảng quan hệ (RR)</div>
+    </div>
+
+    <script>
+        const entities = [
+            // Left Column (User related)
+            { id: 'User', name: 'User', x: 200, y: 550 },
+            { id: 'Address', name: 'Address', x: 200, y: 880 },
+            { id: 'AddressLabel', x: 200, y: 880, hide: true }, // Placeholder for connection
+            
+            // Middle Column (Reviews & Carts)
+            { id: 'Review', name: 'Review', x: 500, y: 550 },
+            { id: 'Category', name: 'Category', x: 600, y: 150 },
+            { id: 'Cart', name: 'Cart', x: 500, y: 880 },
+            
+            // Right Column (Products & Orders)
+            { id: 'Product', name: 'Product', x: 900, y: 400 },
+            { id: 'Brand', name: 'Brand', x: 1050, y: 150 },
+            { id: 'ProductImage', name: 'ProductImage', x: 1250, y: 400 },
+            { id: 'Order', name: 'Order', x: 900, y: 880 },
+            { id: 'Voucher', name: 'Voucher', x: 1200, y: 880 },
+        ];
+
+        const relationships = [
+            // Normal 1-n
+            { from: 'User', to: 'Address', type: '1n', label1: '1', label2: 'n' },
+            { from: 'Category', to: 'Category', type: 'recursive', label1: '1', label2: 'n' },
+            { from: 'Category', to: 'Product', type: '1n', label1: '1', label2: 'n' },
+            { from: 'Brand', to: 'Product', type: '1n', label1: '1', label2: 'n' },
+            { from: 'Product', to: 'ProductImage', type: '1n', label1: '1', label2: 'n' },
+            { from: 'User', to: 'Cart', type: '11', label1: '1', label2: '1' },
+            { from: 'User', to: 'Order', type: '1n', label1: '1', label2: 'n' },
+            { from: 'Voucher', to: 'Order', type: '1n', label1: '1', label2: 'n' },
+            { from: 'User', to: 'Review', type: '1n', label1: '1', label2: 'n' },
+            { from: 'Product', to: 'Review', type: '1n', label1: '1', label2: 'n' },
+            
+            // RR Tables (Placed ABOVE diamond)
+            { from: 'Cart', to: 'Product', type: 'rr', rrName: 'CartItem', label1: 'n', label2: 'n' },
+            { from: 'Order', to: 'Product', type: 'rr', rrName: 'OrderItem', label1: 'n', label2: 'n' },
+            { from: 'Review', to: 'User', type: 'rr', rrName: 'ReviewLike', label1: 'n', label2: 'n' },
+        ];
+
+        const nodeG = document.getElementById('nodes');
+        const linkG = document.getElementById('links');
+        const ENT_W = 125, ENT_H = 48;
+        const DIA_S = 34;
+
+        entities.filter(e => !e.hide).forEach(ent => {
+            const g = createSVG('g', { transform: `translate(${ent.x - ENT_W/2}, ${ent.y - ENT_H/2})` });
+            g.appendChild(createSVG('rect', { class: 'entity-rect', width: ENT_W, height: ENT_H }));
+            g.appendChild(createSVG('text', { class: 'entity-label', x: ENT_W/2, y: ENT_H/2 + 2 }, ent.name));
+            nodeG.appendChild(g);
+        });
+
+        relationships.forEach(rel => {
+            const e1 = entities.find(e => e.id === rel.from);
+            const e2 = entities.find(e => e.id === rel.to);
+
+            if (rel.type === 'recursive') {
+                drawRecursive(e1, rel);
+                return;
+            }
+
+            // Draw link
+            linkG.appendChild(createSVG('line', { class: 'relation-line', x1: e1.x, y1: e1.y, x2: e2.x, y2: e2.y }));
+
+            // Midpoint
+            const mx = (e1.x + e2.x) / 2;
+            const my = (e1.y + e2.y) / 2;
+            const dx = e2.x - e1.x, dy = e2.y - e1.y;
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+            // Draw diamond
+            const dg = createSVG('g', { transform: `translate(${mx}, ${my}) rotate(${angle})` });
+            dg.appendChild(createSVG('polygon', { points: `0,-${DIA_S/2} -${DIA_S/2},0 0,${DIA_S/2}`, fill: rel.label1 === 'n' ? 'black' : 'white', stroke: 'black' }));
+            dg.appendChild(createSVG('polygon', { points: `0,-${DIA_S/2} ${DIA_S/2},0 0,${DIA_S/2}`, fill: rel.label2 === 'n' ? 'black' : 'white', stroke: 'black' }));
+            linkG.appendChild(dg);
+
+            // Draw RR Table ABOVE
+            if (rel.type === 'rr') {
+                const RR_W = 105, RR_H = 28;
+                // Important: Offset RR box vertically based on global coordinate space
+                const rrx = mx, rry = my - 50;
+                linkG.appendChild(createSVG('line', { class: 'rr-connector', x1: mx, y1: my - 16, x2: rrx, y2: rry + RR_H/2 }));
+                const rg = createSVG('g', { transform: `translate(${rrx - RR_W/2}, ${rry - RR_H/2})` });
+                rg.appendChild(createSVG('rect', { class: 'rr-rect', width: RR_W, height: RR_H }));
+                rg.appendChild(createSVG('text', { class: 'rr-label', x: RR_W/2, y: RR_H/2 + 1 }, rel.rrName));
+                nodeG.appendChild(rg);
+            }
+
+            // High-offset labels for maximum clarity
+            drawLabel(e1.x + dx*0.35, e1.y + dy*0.35, rel.label1);
+            drawLabel(e2.x - dx*0.35, e2.y - dy*0.35, rel.label2);
+        });
+
+        function drawRecursive(e, rel) {
+            const p = createSVG('path', { class: 'relation-line', d: `M ${e.x-40} ${e.y-22} C ${e.x-40} ${e.y-120} ${e.x+40} ${e.y-120} ${e.x+40} ${e.y-22}` });
+            linkG.appendChild(p);
+            const dg = createSVG('g', { transform: `translate(${e.x}, ${e.y - 85})` });
+            dg.appendChild(createSVG('polygon', { points: `0,-${DIA_S/2} -${DIA_S/2},0 0,${DIA_S/2}`, fill: 'white', stroke: 'black' }));
+            dg.appendChild(createSVG('polygon', { points: `0,-${DIA_S/2} ${DIA_S/2},0 0,${DIA_S/2}`, fill: 'black', stroke: 'black' }));
+            linkG.appendChild(dg);
+            drawLabel(e.x - 60, e.y - 45, '1');
+            drawLabel(e.x + 60, e.y - 45, 'n');
+        }
+
+        function createSVG(tag, attrs, text) {
+            const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            for (let k in attrs) el.setAttribute(k, attrs[k]);
+            if (text) el.textContent = text;
+            return el;
+        }
+
+        function drawLabel(x, y, txt) {
+            linkG.appendChild(createSVG('text', { class: 'cardinality', x, y: y+5 }, txt));
+        }
+    </script>
+</body>
+</html>
