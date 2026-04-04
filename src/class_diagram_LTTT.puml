@@ -193,13 +193,13 @@ package "utesoundshop.enums" {
 ' Dùng mũi tên dài (--->) hoặc (-left->) để nới rộng khoảng cách nếu cần
 
 ' --- Composition (Quan hệ thành phần - khi cha mất thì con mất) ---
-Order "1" *-- "1..*" OrderItem : "contains"
-Cart "1" *-- "0..*" CartItem : "contains"
-Product "1" *-- "0..*" ProductImage : "has images"
-Review "1" *-- "0..*" ReviewLike : "has likes"
+Order "1" *--> "1..*" OrderItem : "contains"
+Cart "1" *--> "0..*" CartItem : "contains"
+Product "1" *--> "0..*" ProductImage : "has images"
+Review "1" *--> "0..*" ReviewLike : "has likes"
 
 ' --- Aggregation (Quan hệ tập hợp) ---
-Category "1" o-- "0..*" Category : "sub-categories"
+Category "1" o--> "0..*" Category : "sub-categories"
 
 ' --- Association (Quan hệ kết hợp) ---
 User "1" --> "0..*" Address : "has"
