@@ -3,63 +3,64 @@
 skinparam SequenceMessageAlign center
 skinparam linetype ortho
 
-actor User
-boundary UI
-control OrderController
-control OrderService
-control VoucherService
-entity Database
+title Sơ đồ tuần tự: Áp dụng mã giảm giá (Voucher)
 
-User -> UI : Nhập thông tin & voucherCode\nNhấn "Đặt hàng"
+actor "Người dùng" as User
+boundary "UI (Giao diện giỏ hàng/thanh toán)" as UI
+control VoucherApiController as Controller
+control VoucherServiceImpl as Service
+entity VoucherDaoImpl as DAO
+database "Database" as DB
+
+User -> UI : Nhập mã giảm giá và nhấn "Áp dụng"
 activate UI
 
-UI -> OrderController : POST /api/v1/checkout\n(Gửi JSON payload)
-activate OrderController
+UI -> Controller : HTTP POST /api/v1/vouchers/apply\n(Gửi JSON: mã voucher, tổng tạm tính)
+activate Controller
 
-OrderController -> OrderController : Parse JSON (lấy voucherCode, shippingInfo...)
+' 1. Khởi tạo & Parse Request
+Controller -> Controller : Đóng gói dữ liệu thành VoucherApplyRequest (DTO)\nvà kiểm tra cơ bản (mã, subtotal)
 
-OrderController -> OrderService : checkout(userId, shippingInfo, voucherCode, ...)
-activate OrderService
+' 2. Xác thực điều kiện Voucher qua Service
+Controller -> Service : validateVoucher(code, subtotal, userId)
+activate Service
 
-OrderService -> VoucherService : validateVoucher(voucherCode, orderTotal, userId)
-activate VoucherService
+' 3. DAO truy vấn Database
+Service -> DAO : findByCode(code)
+activate DAO
+DAO -> DB : SELECT * FROM vouchers WHERE code = ?
+activate DB
+DB --> DAO : ResultSet
+deactivate DB
+DAO --> Service : Trả về thực thể Voucher (hoặc null)
+deactivate DAO
 
-VoucherService -> Database : Truy vấn Voucher bằng Code
-activate Database
-Database --> VoucherService : Trả về dữ liệu Voucher
-deactivate Database
+' 4. Xử lý logic nghiệp vụ
+Service -> Service : Kiểm tra dữ liệu (Hạn dùng, Trạng thái, \nSố lượt, Giá trị tối thiểu,...)
 
-VoucherService -> VoucherService : Kiểm tra (Status, Expiry, MaxUsage, MinOrderValue)
+alt Trường hợp Voucher hợp lệ
+    Service --> Controller : Trả về VoucherValidationResult (hợp lệ chứa thực thể Voucher)
 
-alt Nếu Voucher hợp lệ
-    VoucherService --> OrderService : Trả về VoucherValidationResult (hợp lệ)
-else Nếu Voucher không hợp lệ
-    VoucherService --> OrderService : Trả về VoucherValidationResult (báo lỗi)
+    ' 5. Tính toán mức giảm giá
+    Controller -> Service : calculateDiscount(voucher, subtotal)
+    activate Service
+    Service --> Controller : Trả về số tiền được giảm (discountAmount)
+    deactivate Service
+
+    ' 6. Chuẩn bị dữ liệu và Response
+    Controller -> Controller : Tính newTotal = subtotal - discountAmount\nĐóng gói vào VoucherApplyResponse
+    Controller --> UI : HTTP 200 OK + JSON Response
+else Trường hợp Voucher không tồn tại hoặc không hợp lệ
+    Service --> Controller : Trả về VoucherValidationResult (chứa cờ false và thông báo lỗi)
+    deactivate Service
+
+    ' 6. Trả phản hồi lỗi
+    Controller --> UI : HTTP 400 Bad Request + Kèm thông báo (message)
 end
-deactivate VoucherService
 
-alt Validation thành công
-    OrderService -> VoucherService : calculateDiscount(voucher, orderTotal)
-    activate VoucherService
-    VoucherService --> OrderService : Trả về số tiền giảm (discount)
-    deactivate VoucherService
+deactivate Controller
 
-    OrderService -> OrderService : Tính finalAmount = totalAmount - discount
-    OrderService -> Database : Lưu thông tin Order và OrderItem
-    activate Database
-    Database --> OrderService : Thành công
-    deactivate Database
-
-    OrderService --> OrderController : Trả về thông tin đơn hàng
-    OrderController --> UI : HTTP 201 Created (Thành công)
-else Validation thất bại
-    OrderService --> OrderController : throw RuntimeException(Lỗi voucher)
-    OrderController --> UI : HTTP 400 Bad Request (Lỗi)
-end
-deactivate OrderService
-deactivate OrderController
-
-UI --> User : Hiển thị kết quả đơn hàng / Lỗi
+UI --> User : Hiển thị thông báo thành công,\ncập nhật lại số tiền mặt UI (hoặc báo lỗi)
 deactivate UI
 
 @enduml

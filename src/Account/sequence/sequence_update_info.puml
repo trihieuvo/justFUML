@@ -4,109 +4,99 @@ autonumber
 skinparam SequenceMessageAlign center
 skinparam ParticipantPadding 20
 skinparam BoxPadding 10
-skinparam linetype ortho
 
-title Sequence Diagram - Cập nhật thông tin/Địa chỉ (Java Servlet & JPA)
+title Sơ đồ tuần tự (Sequence Diagram) - Luồng Cập nhật Địa chỉ (Profile Update)
 
-actor "Thành viên (User)" as User
-boundary "Giao diện (UI / JSP)" as UI
-control "AddressServlet" as Servlet
-control "AddressService" as Service
-entity "AddressDAO (JPA)" as DAO
-database "Database" as DB
+actor "Người dùng" as User
+participant "Giao diện (UI)" as UI
+participant "UserProfileController\n(Front Controller)" as Controller
+participant "ProfileCommand\n(Command Pattern)" as Command
+participant "UserProfileFacade\n(Facade Pattern)" as Facade
+participant "AddressService" as Service
+participant "AddressDAO" as DAO
+database "PostgreSQL\n(Database)" as DB
 
-User -> UI : Điền form địa chỉ & Tích "Đặt làm mặc định"\nNhấn "Lưu"
+User -> UI : Chỉnh sửa form địa chỉ (Edit Address)\nNhấn "Lưu thay đổi"
 activate UI
 
-alt Luồng: Thêm địa chỉ mới (POST)
-    UI -> Servlet : AJAX POST /api/addresses\n(JSON payload)
-    activate Servlet
+UI -> Controller : POST /profile/addresses/edit\n(Form Data: recipientName, street..., isDefault)
+activate Controller
 
-    Servlet -> Servlet : Đọc JSON từ HttpServletRequest\nLấy userId từ Session/JWT
+Controller -> Controller : req.getAttribute("currentUserId")
+Controller -> Controller : ProfileCommandFactory.getCommand()
+Controller -> Command : execute(req, resp, userId)
+activate Command
 
-    Servlet -> Service : addAddress(userId, addressDTO)
-    activate Service
+Command -> Facade : extractAddressFromRequest(req)
+activate Facade
+Facade --> Command : Đối tượng Address (từ Request)
+deactivate Facade
 
-    Service -> Service : em.getTransaction().begin()
-    Service -> Service : Map DTO sang Entity Address mới
+Command -> Facade : updateAddress(userId, address)
+activate Facade
 
-else Luồng: Cập nhật địa chỉ (PUT)
-    UI -> Servlet : AJAX PUT /api/addresses?id={id}\n(JSON payload)
+Facade -> Service : updateAddress(userId, address)
+activate Service
 
-    Servlet -> Servlet : Đọc JSON từ HttpServletRequest\nLấy userId từ Session/JWT
+Service -> DAO : findById(address.getId())
+activate DAO
+DAO -> DB : Query (SELECT * FROM addresses WHERE id = ?)
+activate DB
+DB --> DAO : Kết quả Record
+deactivate DB
+DAO --> Service : Trả về existingAddress (Managed Entity)
+deactivate DAO
 
-    Servlet -> Service : updateAddress(addressId, userId, addressDTO)
+alt Kiểm tra quyền sở hữu THẤT BẠI
+    Service -> Service : Check existingAddress.userId != userId
+    Service --> Facade : Ném Ngoại lệ (Không có quyền cập nhật)
+    Facade --> Command : Ném Ngoại lệ
+    Command --> Controller : Truyền lỗi lên Controller
 
-    Service -> Service : em.getTransaction().begin()
+    Controller -> Controller : Bắt Ngoại lệ (Fallback Command)\nSet Attribute "errorMessage"
+    Controller -> UI : Render lại trang /profile kèm thông báo lỗi
+    UI --> User : Hiển thị lỗi bảo mật trên thẻ Message
+else Thông tin hợp lệ (Thuộc sở hữu User)
+    Service -> Service : Gán dữ liệu form vào existingAddress\n(setRecipientName, setStreetAddress...)
 
-    Service -> DAO : findByIdAndUserId(addressId, userId)
-    activate DAO
-    DAO --> Service : Managed Entity (Address)
-    deactivate DAO
-
-    alt Không tìm thấy hoặc Không thuộc quyền sở hữu
-        Service -> Service : em.getTransaction().rollback()
-        Service --> Servlet : throw CustomException("Not Found / Forbidden")
-        Servlet --> UI : HTTP 404 / 403 (JSON Error)
-        UI --> User : Hiển thị thông báo lỗi
-    else Dữ liệu hợp lệ
-        Service -> Service : Cập nhật các trường (streetAddress, ward...)
-    end
-end
-
-' --- LOGIC XỬ LÝ ĐỊA CHỈ MẶC ĐỊNH ---
-alt Nếu addressDTO.isDefault == true
-    Service -> DAO : findDefaultAddress(userId)
-    activate DAO
-    DAO -> DB : SELECT * FROM addresses\nWHERE user_id = ? AND is_default = true
-    activate DB
-    DB --> DAO : oldDefaultAddress
-    deactivate DB
-    DAO --> Service : oldDefaultAddress
-    deactivate DAO
-
-    opt Nếu tồn tại oldDefaultAddress
-        Service -> Service : oldDefaultAddress.setIsDefault(false)
-        Service -> DAO : merge(oldDefaultAddress)
+    alt Nếu form check "Đặt làm mặc định"
+        Service -> DAO : resetDefaultAddress(userId)
         activate DAO
-        DAO -> DB : UPDATE addresses SET is_default = false
+        DAO -> DB : UPDATE addresses SET is_default = false\nWHERE user_id = ?
         activate DB
         DB --> DAO : Success
         deactivate DB
-        DAO --> Service : Success
+        DAO --> Service : Hoàn tất Reset
         deactivate DAO
+
+        Service -> Service : existingAddress.setIsDefault(true)
     end
 
-    Service -> Service : addressToSave.setIsDefault(true)
-else Nếu addressDTO.isDefault == false
-    Service -> Service : addressToSave.setIsDefault(false)
+    Service -> DAO : save(existingAddress)
+    activate DAO
+    DAO -> DB : DML (UPDATE addresses SET ... WHERE id = ?)
+    activate DB
+    DB --> DAO : Success
+    deactivate DB
+    DAO --> Service : Trả về DB Address đã cập nhật
+    deactivate DAO
+
+    Service --> Facade : Thành công
+    deactivate Service
+
+    Facade --> Command : Thành công
+    deactivate Facade
+
+    Command -> Command : Set session "successMessage"
+    Command --> Controller : Kết thúc lệnh
+    deactivate Command
+
+    Controller --> UI : HTTP 302 Redirect (/profile)
+    deactivate Controller
+
+    UI --> User : Làm mới trang\nHiển thị "Cập nhật địa chỉ thành công"
 end
 
-' --- LƯU THAY ĐỔI VÀ ĐÓNG TRANSACTION ---
-alt Là thao tác Thêm mới
-    Service -> DAO : persist(addressToSave)
-else Là thao tác Cập nhật
-    Service -> DAO : merge(addressToSave)
-end
-
-activate DAO
-DAO -> DB : INSERT / UPDATE
-activate DB
-DB --> DAO : Success
-deactivate DB
-DAO --> Service : savedAddress
-deactivate DAO
-
-Service -> Service : em.getTransaction().commit()
-
-Service --> Servlet : AddressDTO (Dữ liệu đã lưu)
-deactivate Service
-
-Servlet -> Servlet : Chuyển AddressDTO thành JSON\nGhi vào HttpServletResponse
-Servlet --> UI : HTTP 200 OK / 201 Created (JSON Response)
-deactivate Servlet
-
-UI --> User : Thông báo "Lưu thành công"\n& Cập nhật danh sách địa chỉ trên màn hình
 deactivate UI
 
 @enduml

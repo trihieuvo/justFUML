@@ -1,83 +1,66 @@
 @startuml
 !theme plain
-autonumber
 skinparam SequenceMessageAlign center
-skinparam ParticipantPadding 20
-skinparam BoxPadding 10
 skinparam linetype ortho
 
-title Sequence Diagram - Xem chi tiết sản phẩm (Java Servlet & JPA)
+title Sơ đồ tuần tự: Xem lịch sử và chi tiết đơn hàng cá nhân (Show Orders)
 
-actor "Khách/Thành viên (User)" as User
-boundary "Giao diện (UI)" as UI
-control "ProductServlet" as Servlet
-control "ProductService" as Service
-entity "ProductDAO (JPA)" as ProductDAO
-entity "ReviewDAO (JPA)" as ReviewDAO
-database "Database" as DB
+actor "Thành viên (User)" as User
+boundary "UI (Trang Hồ sơ)" as UI
+control UserProfileController as Controller
+participant "ProfileCommandFactory" as Factory
+control ShowOrdersCommand as Command
+control ProfileFacadeImpl as Facade
+entity OrderDaoImpl as DAO
+database "Database (DB)" as DB
 
-User -> UI : Click vào một sản phẩm
+User -> UI : Chuyển sang Tab "Đơn hàng của tôi"
 activate UI
 
-UI -> Servlet : AJAX GET /api/v1/products/{id}
-activate Servlet
+UI -> Controller : HTTP GET /profile/orders
+activate Controller
 
-Servlet -> Servlet : Trích xuất productId từ URL
+' 1. Xác thực và Gọi Command
+Controller -> Controller : Xác thực Token (JWT Authentication)\nLấy userId hiện tại
+Controller -> Factory : getCommand("GET", "/profile/orders")
+activate Factory
+Factory --> Controller : Trả về instance ShowOrdersCommand
+deactivate Factory
 
-Servlet -> Service : getProductDetail(productId)
-activate Service
+Controller -> Command : execute(req, resp, userId)
+activate Command
 
-' --- LẤY THÔNG TIN SẢN PHẨM VÀ HÌNH ẢNH ---
-Service -> ProductDAO : findByIdWithImages(productId)
-activate ProductDAO
-note right of ProductDAO
-  Dùng JPQL "JOIN FETCH p.images"
-  để lấy luôn danh sách ảnh trong 1 query,
-  tránh lỗi Lazy Loading.
-end note
+' 2. Truy xuất Lịch sử Đơn hàng
+Command -> Facade : getUserOrders(userId)
+activate Facade
 
-ProductDAO -> DB : SELECT p, i FROM products p \nLEFT JOIN product_images i ... WHERE p.id = ? AND p.status = true
+Facade -> DAO : findByUserId(userId)
+activate DAO
+DAO -> DB : SELECT * FROM orders WHERE user_id = ?\n(Và tải các OrderItems đính kèm)
 activate DB
-DB --> ProductDAO : ResultSet
+DB --> DAO : ResultSet
 deactivate DB
+DAO --> Facade : Trả về List<Order>
+deactivate DAO
 
-ProductDAO --> Service : Trả về Product (kèm List<ProductImage>)
-deactivate ProductDAO
+Facade --> Command : Kết quả danh sách Đơn hàng
+deactivate Facade
 
-alt Không tìm thấy sản phẩm (hoặc status = false)
-    Service --> Servlet : throw CustomException("Sản phẩm không tồn tại")
-    Servlet --> UI : HTTP 404 Not Found
-    UI --> User : Hiển thị trang lỗi 404 hoặc thông báo
-else Sản phẩm hợp lệ
-    ' --- LẤY THÔNG TIN ĐÁNH GIÁ (REVIEWS) ---
-    Service -> ReviewDAO : findByProductId(productId, pageData)
-    activate ReviewDAO
-    note right of ReviewDAO
-      Review thường có số lượng lớn,
-      nên tách riêng truy vấn và có phân trang.
-    end note
+' 3. Truy xuất Thông tin User bổ sung
+Command -> Facade : getUserDetails(userId)
+activate Facade
+Facade --> Command : Trả về User entity
+deactivate Facade
 
-    ReviewDAO -> DB : SELECT * FROM reviews r \nWHERE r.product_id = ? LIMIT ...
-    activate DB
-    DB --> ReviewDAO : ResultSet
-    deactivate DB
+' 4. Render Layout
+Command -> Command : setVariable("orders", orders) \nvà "user" vào Thymeleaf WebContext
+Command -> UI : Process view template "orders.html"
+deactivate Command
 
-    ReviewDAO --> Service : Trả về List<Review>
-    deactivate ReviewDAO
+Controller --> UI : Trả về trang HTML
+deactivate Controller
 
-    ' --- MAP DATA SANG DTO ---
-    Service -> Service : Map Product, List<ProductImage> \nvà List<Review> sang ProductDetailDTO
-
-    Service --> Servlet : Trả về ProductDetailDTO
-    deactivate Service
-
-    Servlet -> Servlet : Chuyển ProductDetailDTO thành JSON
-
-    Servlet --> UI : HTTP 200 OK (Kèm JSON Data)
-    deactivate Servlet
-
-    UI --> User : Render chi tiết sản phẩm\n(Tên, Giá, Mô tả, Thông số, \nGallery Ảnh, Danh sách Đánh giá)
-    deactivate UI
-end
+UI --> User : Hiển thị giao diện danh sách đơn hàng\ncùng chi tiết từng mặt hàng đã đặt
+deactivate UI
 
 @enduml

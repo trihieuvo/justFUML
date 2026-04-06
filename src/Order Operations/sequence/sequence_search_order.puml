@@ -1,69 +1,71 @@
 @startuml
 !theme plain
-autonumber
 skinparam SequenceMessageAlign center
-skinparam ParticipantPadding 20
-skinparam BoxPadding 10
 skinparam linetype ortho
 
-title Sequence Diagram - Tra cứu đơn hàng công khai (Java Servlet & JPA)
+title Sơ đồ tuần tự: Tra cứu thông tin đơn hàng công khai (Search/Track Order)
 
-actor "Khách/Thành viên (Guest/User)" as User
-boundary "Giao diện (UI)" as UI
-control "OrderServlet" as Servlet
-control "OrderService" as Service
-entity "OrderDAO (JPA)" as DAO
-database "Database" as DB
+actor "Khách/Thành viên" as User
+boundary "UI (Trang Tra cứu)" as UI
+control OrderTrackingController as Controller
+participant "OrderCommandFactory" as Factory
+control TrackOrderCommand as Command
+control OrderFacadeImpl as Facade
+entity OrderDaoImpl as DAO
+database "Database (DB)" as DB
 
-User -> UI : Nhập Mã đơn hàng (orderCode)\nvà Email\nNhấn "Tra cứu"
+User -> UI : Nhập mã đơn hàng (orderCodes)\nvà nhấn "Tra cứu"
 activate UI
 
-UI -> Servlet : AJAX GET /api/v1/orders/track\n?orderCode=...&email=...
-activate Servlet
+UI -> Controller : HTTP POST /order/track\n(Gửi dữ liệu form: orderCodes=...)
+activate Controller
 
-Servlet -> Servlet : Lấy tham số orderCode và email\ntừ HttpServletRequest
+' 1. Khởi tạo Command Pattern
+Controller -> Factory : getCommand("POST", "/order/track")
+activate Factory
+Factory --> Controller : Trả về instance TrackOrderCommand
+deactivate Factory
 
-Servlet -> Service : trackOrder(orderCode, email)
-activate Service
+Controller -> Command : execute(req, resp)
+activate Command
 
-' --- TRUY VẤN ĐƠN HÀNG VÀ CHI TIẾT ---
-Service -> DAO : findByOrderCodeAndEmail(orderCode, email)
+' 2. Xử lý logic và chuẩn hóa Input
+Command -> Command : Tách và làm sạch danh sách orderCodes\n(split, trim, bỏ trống, lấy unique)
+
+' 3. Tương tác với Database qua Facade
+Command -> Facade : getOrdersByOrderCodes(orderCodes)
+activate Facade
+
+Facade -> DAO : findByOrderCodes(cleanCodes)
 activate DAO
 
 note right of DAO
-  Sử dụng JPQL JOIN FETCH để lấy Đơn hàng
-  cùng với chi tiết (OrderItems) và Sản phẩm,
-  tránh lỗi Lazy Loading khi map DTO.
+  Dùng truy vấn kết hợp:
+  JOIN FETCH để kéo Order cùng
+  OrderItems và Product để tránh lỗi
+  Lazy Loading khi in ra View.
 end note
 
-DAO -> DB : SELECT o FROM orders o \nLEFT JOIN FETCH o.items i \nLEFT JOIN FETCH i.product \nWHERE o.orderCode = ? AND o.email = ?
+DAO -> DB : SELECT o FROM Order o WHERE o.orderCode IN (?)
 activate DB
 DB --> DAO : ResultSet
 deactivate DB
 
-DAO --> Service : Trả về Order Entity (hoặc null)
+DAO --> Facade : Trả về List<Order> hoàn chỉnh
 deactivate DAO
 
-alt Không tìm thấy Đơn hàng (Sai mã hoặc sai Email)
-    Service --> Servlet : throw CustomException("Không tìm thấy đơn hàng")
-    Servlet --> UI : HTTP 404 Not Found / 400 Bad Request
-    UI --> User : Hiển thị lỗi "Mã đơn hàng và email không khớp"
-else Tìm thấy Đơn hàng
-    ' --- CHUYỂN ĐỔI SANG DTO ---
-    Service -> Service : Map Order sang OrderTrackingDTO\n(Bao gồm: orderCode, status, recipientName,\nshippingAddress, totalAmount, paymentMethod)
+Facade --> Command : Trả về danh sách Order
+deactivate Facade
 
-    Service -> Service : Map List<OrderItem> sang List<OrderItemDTO>\n(Bao gồm: Tên SP, Ảnh Thumbnail, Số lượng, Giá)
+' 4. Render kết quả qua Thymeleaf
+Command -> Command : setVariable("orders", orders)\nvà "searchedCodes" vào WebContext
+Command -> UI : Process view template "order-tracking"
+deactivate Command
 
-    Service --> Servlet : Trả về OrderTrackingDTO
-    deactivate Service
+Controller --> UI : Đóng gói và trả về trang HTML
+deactivate Controller
 
-    Servlet -> Servlet : Chuyển OrderTrackingDTO thành JSON
-
-    Servlet --> UI : HTTP 200 OK (Kèm JSON Data)
-    deactivate Servlet
-
-    UI --> User : Hiển thị chi tiết Đơn hàng\nvà Trạng thái (OrderStatus) hiện tại
-    deactivate UI
-end
+UI --> User : Hiển thị bảng trạng thái, chi tiết\ncác mặt hàng của quá trình vận chuyển
+deactivate UI
 
 @enduml
