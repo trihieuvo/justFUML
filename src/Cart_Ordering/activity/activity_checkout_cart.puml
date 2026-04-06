@@ -1,117 +1,52 @@
 @startuml
-!theme plain
-skinparam linetype ortho
-skinparam ActivityBackgroundColor #f9f9f9
-skinparam ActivityBorderColor #333333
+title Sơ đồ Hoạt động Thanh toán - AudioGear E-Commerce
 
-title Activity Diagram - Quy trình Đặt hàng (Checkout)
+skinparam ActivityStartColor white
+skinparam ActivityEndColor white
 
-|Người dùng|
+|Khách hàng|
 start
-:Truy cập trang Thanh toán (Checkout);
-:Chọn Địa chỉ có sẵn hoặc Nhập địa chỉ mới;
-:Nhập mã giảm giá (Voucher) (Tùy chọn);
-:Chọn phương thức thanh toán
-(COD, Store Pickup, Bank Transfer);
-
-if (Phương thức là Bank Transfer?) then (Có)
-  :Nhập thông tin thanh toán;
-else (Không)
-endif
-
-:Nhấn nút "Xác nhận đặt hàng";
+:Truy cập trang Giỏ hàng;
+:Nhấn nút "Thành toán";
 
 |Hệ thống|
-:Nhận yêu cầu Checkout;
-:Kiểm tra Giỏ hàng (Cart) của người dùng;
-
-if (Giỏ hàng trống?) then (Có)
-  :Ném ngoại lệ "Giỏ hàng trống";
-  |Người dùng|
-  :Hiển thị thông báo lỗi;
-  stop
-else (Không)
-  |Hệ thống|
-  :Tính tổng tiền các sản phẩm trong giỏ;
-
-  ' --- Áp dụng Voucher ---
-  if (Có cung cấp mã Voucher?) then (Có)
-    :Xác thực Voucher
-    (Hết hạn? Đạt giá trị tối thiểu? Hết lượt dùng?);
-
-    if (Voucher hợp lệ?) then (Không)
-      :Ném ngoại lệ "Voucher không hợp lệ";
-      |Người dùng|
-      :Hiển thị thông báo lỗi;
-      stop
-    else (Có)
-      |Hệ thống|
-      :Tính số tiền được giảm & Tổng tiền cuối;
-    endif
-  else (Không)
-  endif
-
-  ' --- Xác thực thanh toán ---
-  :Xác thực phương thức thanh toán;
-  if (Bank Transfer và thiếu thông tin?) then (Có)
-    :Ném ngoại lệ "Thiếu thông tin thanh toán";
-    |Người dùng|
-    :Hiển thị thông báo lỗi;
-    stop
-  else (Không)
-    |Hệ thống|
-
-    ' --- Tạo đơn hàng ---
-    :Khởi tạo đối tượng Order
-    (Mã đơn tự sinh, Trạng thái PENDING);
-    :Gắn thông tin Địa chỉ giao hàng & Tổng tiền;
-    :Lưu Order vào Database (Lấy ID);
-
-    if (Thanh toán Bank Transfer?) then (Có)
-      :Lưu thông tin thanh toán vào Redis (TTL 24h);
-    else (Không)
-    endif
-
-    ' --- Xử lý OrderItem & Tồn kho ---
-    :Duyệt qua danh sách CartItem;
-    repeat
-      :Kiểm tra tồn kho (Stock check) lần cuối;
-      if (Tồn kho đủ đáp ứng?) then (Không)
-        :Ném ngoại lệ "Sản phẩm không đủ số lượng";
-        |Người dùng|
-        :Hiển thị thông báo lỗi;
-        stop
-      else (Có)
-        |Hệ thống|
-        :Tạo đối tượng OrderItem;
-        :Trừ số lượng tồn kho của Product;
-        :Gắn OrderItem vào Order;
-      endif
-    repeat while (Còn CartItem?) is (Có)
-
-    :Lưu toàn bộ OrderItem & Cập nhật Product vào Database;
-
-    ' --- Xử lý hậu kỳ (Post-processing) ---
-    if (Có áp dụng Voucher?) then (Có)
-      :Cập nhật (Tăng) số lượt sử dụng Voucher;
-    else (Không)
-    endif
-
-    :Xóa các CartItem khỏi Giỏ hàng;
-
-    fork
-      :Gửi Email xác nhận cho Khách hàng (Async);
-    fork again
-      :Gửi Email thông báo cho Admin (Async);
-    end fork
-
-    :Trả về thông tin Đơn hàng
-    (OrderId, OrderCode, TotalAmount);
-
-    |Người dùng|
-    :Chuyển hướng đến trang "Đặt hàng thành công";
-    stop
-  endif
+if (Đã đăng nhập?) then (Chưa)
+    :Lấy giỏ hàng khách từ Cookie;
+else (Rồi)
+    :Tải giỏ hàng từ Cơ sở dữ liệu;
 endif
 
+|Khách hàng|
+:Điền thông tin giao hàng;
+if (Có mã giảm giá?) then (Có)
+    :Nhập mã khuyến mãi;
+else (Không)
+endif
+:Chọn phương thức thanh toán;
+:Nhấn "Xác nhận đặt hàng";
+
+|Hệ thống|
+:Kiểm tra số lượng tồn kho thực tế;
+if (Đủ hàng?) then (Không)
+    :Chặn giao dịch;
+    :Báo lỗi "Không đủ hàng";
+    :Yêu cầu cập nhật lại giỏ hàng;
+    stop
+else (Có)
+    :Khởi tạo đơn hàng;
+    :Ghi vào DB ;
+    :Trừ số lượng tồn kho;
+    
+
+    :Kích hoạt sự kiện tạo đơn hàng;
+    :Gửi email xác nhận cho khách hàng;
+
+    
+    :Chuyển hướng đến trang "Đặt hàng thành công";
+endif
+
+|Khách hàng|
+:Xem thông báo đặt hàng thành công;
+
+stop
 @enduml
