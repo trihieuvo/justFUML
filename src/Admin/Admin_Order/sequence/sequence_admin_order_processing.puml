@@ -3,7 +3,7 @@
 skinparam SequenceMessageAlign center
 skinparam linetype ortho
 
-title Sơ đồ tuần tự: Cập nhật trạng thái đơn hàng (Admin)
+title Sơ đồ tuần tự: Xử lý đơn hàng đơn hàng (Admin)
 
 actor "Quản trị viên" as Admin
 boundary "UI (Giao diện quản trị)" as UI
