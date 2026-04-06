@@ -1,4 +1,5 @@
-title Quy trình Đánh giá sản phẩm - AudioGear E-Commerce
+@startuml
+title Sơ đồ hoạt động Đánh giá sản phẩm - AudioGear E-Commerce
 
 skinparam ActivityStartColor white
 skinparam ActivityEndColor white

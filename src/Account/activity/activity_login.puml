@@ -1,84 +1,45 @@
 @startuml
-!theme plain
-skinparam linetype ortho
-skinparam ActivityBackgroundColor #f9f9f9
-skinparam ActivityBorderColor #333333
+title Sơ đồ Hoạt động Đăng nhập - AudioGear E-Commerce
 
-title Activity Diagram - Luồng Đăng nhập (Traditional & OAuth)
+skinparam ActivityStartColor white
+skinparam ActivityEndColor white
 
 |Người dùng|
 start
-:Truy cập trang đăng nhập;
-:Chọn phương thức đăng nhập;
+:Truy cập trang Đăng nhập;
+:Nhập Email/Username và Mật khẩu;
+:Nhấn nút "Đăng nhập";
 
-split
-   :Chọn "Đăng nhập truyền thống";
-   repeat
-     :Nhập Email và Mật khẩu;
-
-     |Hệ thống|
-     :Kiểm tra thông tin (DB);
-     if (Thông tin chính xác?) then (Không)
-        :Hiển thị lỗi "Sai thông tin";
-
-        |Người dùng|
-        if (Tiếp tục thử lại?) then (Không)
-           stop
-        endif
-     else (Có)
-        |Hệ thống|
-     endif
-   repeat while (Thông tin chính xác?) is (Không)
-
-split again
-   |Người dùng|
-   :Chọn "Đăng nhập qua Google";
-
-   |Hệ thống|
-   :Chuyển hướng yêu cầu đến Google;
-
-   |Google (Bên thứ 3)|
-   :Hiển thị màn hình đăng nhập Google;
-   :Xác thực người dùng;
-
-   if (Xác thực thành công?) then (Có)
-     |Hệ thống|
-     :Nhận thông tin Email từ Google;
-     if (Email đã tồn tại?) then (Không)
-       :Tự động tạo tài khoản mới;
-     endif
-   else (Không)
-     |Google (Bên thứ 3)|
-     :Trả về lỗi xác thực;
-
-     |Hệ thống|
-     :Hiển thị lỗi "Xác thực thất bại";
-     |Hệ thống|
-     stop
-   endif
-end split
-
-' --- Bước kiểm tra trạng thái chung ---
 |Hệ thống|
-:Truy xuất thông tin User;
+:Tiếp nhận thông tin (LoginController);
+:Xác thực thông tin qua LocalLoginStrategy;
 
-if (Trạng thái tài khoản?) then (Locked)
-  :Hiển thị thông báo "Tài khoản bị khóa";
-  stop
-elseif (Pending?) then (Đúng)
-  :Yêu cầu xác thực Email/OTP;
-  stop
-else (Active)
-  :Tạo Session/JWT Token;
-  :Lưu lịch sử đăng nhập;
-  if (UserRole == Admin?) then (Đúng)
-    :Chuyển hướng đến Dashboard Admin;
-  else (Sai)
-    :Chuyển hướng về Trang chủ;
-  endif
+if (Thông tin chính xác?) then (Không)
+    :Thông báo lỗi "Sai tài khoản hoặc mật khẩu";
+    stop
+else (Có)
+    :Kiểm tra trạng thái tài khoản;
+    if (Trạng thái?) then (Bị khóa - Locked)
+        :Báo lỗi "Tài khoản đang bị khóa";
+        stop
+    elseif (Trạng thái?) then (Chờ xác nhận - Pending)
+        :Yêu cầu xác thực OTP để kích hoạt;
+        stop
+    else (Hoạt động - Active)
+        :Tạo mã thông báo JWT (JwtUtil);
+        :Lưu JWT vào Cookie (accessToken);
+        :Kiểm tra và Hợp nhất giỏ hàng tạm (Merge Guest Cart);
+
+        if (Vai trò là Admin?) then (Đúng)
+            :Chuyển hướng đến Dashboard Admin;
+        else (Sai)
+            :Chuyển hướng về Trang chủ;
+        endif
+    endif
 endif
 
 |Người dùng|
-:Thấy giao diện tương ứng;
+:Thấy giao diện trang chủ hoặc Dashboard;
+
 stop
 @enduml

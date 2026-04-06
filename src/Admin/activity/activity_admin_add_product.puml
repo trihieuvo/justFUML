@@ -1,4 +1,5 @@
-title Quy trình Thêm sản phẩm mới - AudioGear E-Commerce
+@startuml
+title Sơ đồ hoạt động Thêm sản phẩm mới - AudioGear E-Commerce
 
 skinparam ActivityStartColor white
 skinparam ActivityEndColor white

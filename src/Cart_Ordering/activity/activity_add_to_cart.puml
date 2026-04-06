@@ -1,73 +1,53 @@
 @startuml
-!theme plain
-skinparam linetype ortho
-skinparam ActivityBackgroundColor #f9f9f9
-skinparam ActivityBorderColor #333333
+title Sơ đồ Hoạt động Thêm sản phẩm vào giỏ hàng - AudioGear E-Commerce
 
-title Activity Diagram - Thêm sản phẩm vào giỏ hàng
+skinparam ActivityStartColor white
+skinparam ActivityEndColor white
 
-|Người dùng|
+|Khách hàng|
 start
 :Truy cập trang chi tiết sản phẩm;
-:Chọn số lượng (quantity);
+:Chọn số lượng muốn mua;
 :Nhấn nút "Thêm vào giỏ hàng";
 
 |Hệ thống|
-:Nhận yêu cầu thêm vào giỏ hàng
-(userId, productId, quantity);
-:Lấy hoặc tạo mới Giỏ hàng (Cart) của người dùng;
-:Truy xuất thông tin Sản phẩm (Product);
+:Tiếp nhận yêu cầu (CartController);
+:Kiểm tra trạng thái đăng nhập (JWT Cookie);
 
-if (Sản phẩm tồn tại?) then (Không)
-  :Ném ngoại lệ "Không tìm thấy sản phẩm";
-  |Người dùng|
-  :Hiển thị thông báo lỗi;
-  stop
-else (Có)
-  |Hệ thống|
-  if (Số lượng tồn kho >= Số lượng yêu cầu?) then (Không)
-    :Ném ngoại lệ "Số lượng yêu cầu
-    vượt quá số lượng tồn kho";
-    |Người dùng|
-    :Hiển thị thông báo lỗi;
-    stop
-  else (Có)
-    |Hệ thống|
-    :Tìm kiếm sản phẩm (CartItem)
-    trong Giỏ hàng;
-
-    if (CartItem đã tồn tại?) then (Có)
-      :Tính số lượng mới =
-      Số lượng hiện tại + quantity;
-
-      if (Số lượng tồn kho >= Số lượng mới?) then (Không)
-        :Ném ngoại lệ "Số lượng yêu cầu
-        vượt quá số lượng tồn kho";
-        |Người dùng|
-        :Hiển thị thông báo lỗi;
+if (Người dùng đã đăng nhập?) then (Có)
+    :Gọi CartFacadeService.addToCart(userId, productId, quantity);
+    :Truy vấn sản phẩm và Giỏ hàng từ Database;
+    if (Sản phẩm đủ tồn kho?) then (Không)
+        :Ném InsufficientStockException;
+        :Hiển thị lỗi "Sản phẩm không đủ hàng";
         stop
-      else (Có)
-        |Hệ thống|
-        :Cập nhật số lượng mới cho CartItem;
-      endif
-
-    else (Không)
-      |Hệ thống|
-      :Tạo CartItem mới với
-      số lượng yêu cầu;
+    else (Có)
+        :Cập nhật số lượng hoặc Thêm mới bản ghi CartItem vào DB;
+        :Lưu các thay đổi và Commit Transaction;
     endif
-
-    :Lưu CartItem vào cơ sở dữ liệu;
-    :Tải lại dữ liệu Giỏ hàng mới nhất;
-    :Tính toán tổng tiền (totalPrice)
-    và tổng số món (totalItems);
-    :Trả về Response Giỏ hàng;
-
-    |Người dùng|
-    :Cập nhật giao diện Giỏ hàng;
-    :Hiển thị thông báo "Thêm thành công";
-    stop
-  endif
+else (Không)
+    :Gọi GuestCartService.addToCart(req, resp, productId, quantity);
+    :Truy vấn Database để lấy thông tin giá và tồn kho sản phẩm;
+    if (Sản phẩm đủ tồn kho?) then (Không)
+        :Báo lỗi "Sản phẩm không đủ hàng";
+        stop
+    else (Có)
+        :Giải mã giỏ hàng từ Cookie (guest_cart);
+        :Thêm mới hoặc cập nhật Item trong giỏ hàng tạm;
+        :Mã hóa và cập nhật lại Cookie vào Response;
+    endif
 endif
 
+|Hệ thống|
+:Chuẩn bị phản hồi kết quả;
+if (Yêu cầu qua AJAX?) then (Có)
+    :Trả về JSON {"success": true};
+else (Không)
+    :Chuyển hướng (Redirect) về trang cũ hoặc trang Giỏ hàng;
+endif
+
+|Khách hàng|
+:Xem thông báo thành công và Cập nhật icon số lượng giỏ hàng;
+
+stop
 @enduml
