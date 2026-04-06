@@ -3,73 +3,73 @@
 skinparam SequenceMessageAlign center
 skinparam linetype ortho
 
-title Sequence Diagram - Chuyển đổi Giỏ hàng thành Đơn hàng
+title Sơ đồ tuần tự: Đặt hàng (Checkout)
 
-actor User
-boundary UI
-control OrderController
-control OrderService
-control PaymentStrategy
-entity CartRepository
-entity OrderRepository
-entity ProductRepository
+actor "Khách hàng" as Customer
+boundary "UI (Trình duyệt)" as UI
+control CheckoutController
+control CheckoutService
+control VoucherService
+entity ProductDao
+entity OrderDao
+participant PaymentStrategy
+database "Database" as DB
 
-User -> UI : Nhấn "Xác nhận đặt hàng"
+Customer -> UI : Gửi yêu cầu đặt hàng\n(Danh sách SP + PT Thanh toán)
 activate UI
 
-UI -> OrderController : POST /api/checkout\n(paymentMethod, ...)
-activate OrderController
+UI -> CheckoutController : HTTP POST /api/v1/checkout\n(JSON Data)
+activate CheckoutController
 
-OrderController -> OrderService : checkout(userId, requestData)
-activate OrderService
+CheckoutController -> CheckoutService : checkout(userId, checkoutRequest)
+activate CheckoutService
 
-OrderService -> CartRepository : findByUserId(userId)
-activate CartRepository
-CartRepository --> OrderService : Trả về Cart & CartItems
-deactivate CartRepository
+' 1. Voucher Validation
+CheckoutService -> VoucherService : validateVoucher(code, total, userId)
+activate VoucherService
+VoucherService --> CheckoutService : Trả về kết quả xác thực & giảm giá
+deactivate VoucherService
 
-OrderService -> OrderService : Tính toán tổng tiền
+' 2. Inventory Check
+CheckoutService -> ProductDao : findById(productId)
+activate ProductDao
+ProductDao -> DB : SELECT product
+activate DB
+DB --> ProductDao : Dữ liệu sản phẩm
+deactivate DB
+ProductDao --> CheckoutService : Trả về thông tin sản phẩm
+deactivate ProductDao
 
-OrderService -> OrderRepository : save(order) (Lưu tạm lấy ID)
-activate OrderRepository
-OrderRepository --> OrderService : Trả về savedOrder
-deactivate OrderRepository
+CheckoutService -> CheckoutService : Kiểm tra tồn kho
 
-OrderService -> PaymentStrategy : pay(savedOrder, paymentInfo)
+' 3. Payment Strategy
+CheckoutService -> PaymentStrategy : pay(totalAmount)
 activate PaymentStrategy
-PaymentStrategy --> OrderService : paymentResult (Thành công)
+PaymentStrategy --> CheckoutService : Trả về PaymentResult (Thành công)
 deactivate PaymentStrategy
 
-loop Duyệt qua từng CartItem
-    OrderService -> OrderService : Khởi tạo OrderItem
+' 4. Order creation & storage
+CheckoutService -> CheckoutService : Khởi tạo thực thể Order & OrderItems
 
-    OrderService -> ProductRepository : Cập nhật giảm tồn kho (stock)
-    activate ProductRepository
-    ProductRepository --> OrderService : Thành công
-    deactivate ProductRepository
+CheckoutService -> OrderDao : save(order)
+activate OrderDao
+OrderDao -> DB : INSERT order & order_items
+activate DB
+DB --> OrderDao : Success
+deactivate DB
+OrderDao --> CheckoutService : Trả về đơn hàng đã lưu
+deactivate OrderDao
 
-    OrderService -> OrderService : Thêm OrderItem vào Order
-end
+' 5. Response
+CheckoutService --> CheckoutController : Trả về CheckoutResponse
+deactivate CheckoutService
 
-OrderService -> OrderRepository : save(savedOrder) (Lưu chính thức)
-activate OrderRepository
-OrderRepository --> OrderService : finalOrder
-deactivate OrderRepository
+CheckoutController --> UI : HTTP 201 Created (CheckoutResponse)
+deactivate CheckoutController
 
-loop Duyệt qua từng CartItem
-    OrderService -> CartRepository : deleteCartItem(itemId)
-    activate CartRepository
-    CartRepository --> OrderService : Thành công
-    deactivate CartRepository
-end
+UI -> UI : Điều hướng sang giao diện\n"Hoàn tất đặt hàng"
 
-OrderService --> OrderController : Trả về thông tin Order (orderCode)
-deactivate OrderService
-
-OrderController --> UI : HTTP 200 OK (Thành công)
-deactivate OrderController
-
-UI --> User : Hiển thị màn hình "Đặt hàng thành công"
+UI --> Customer : Hiển thị thông báo thành công
 deactivate UI
 
 @enduml

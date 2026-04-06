@@ -3,62 +3,54 @@
 skinparam SequenceMessageAlign center
 skinparam linetype ortho
 
-actor "Admin" as Admin
-boundary "UI (Admin Panel)" as UI
-control "AdminProductController" as Controller
-control "ProductService" as Service
-entity "Database" as DB
+title Sơ đồ tuần tự: Thêm mới sản phẩm (Admin)
+
+actor "Quản trị viên" as Admin
+boundary "UI (Giao diện quản trị)" as UI
+control AdminProductController as Controller
+control ProductService as Service
+participant ProductBuilder as Builder
+entity ProductDao as DAO
+database "Database" as DB
 
 Admin -> UI : Nhập thông tin sản phẩm và link ảnh
 activate UI
 
-UI -> Controller : POST /api/admin/products\n(JSON: ProductRequest)
+UI -> Controller : HTTP POST /admin/products/new
 activate Controller
 
-Controller -> Service : createProduct(request)
+' 1. Packaging DTO
+Controller -> Controller : Đóng gói dữ liệu văn bản và\nđường dẫn ảnh vào CreateProductRequest (DTO)
+
+' 2. Call Service
+Controller -> Service : createProduct(requestDTO)
 activate Service
 
-Service -> DB : findCategoryById(categoryId)
+' 3. Builder Pattern usage
+Service -> Builder : Khởi tạo ProductBuilder với dữ liệu DTO
+activate Builder
+Builder -> Builder : build() - Ánh xạ và xây dựng thực thể Product
+Builder --> Service : Trả về thực thể Product hoàn chỉnh
+deactivate Builder
+
+' 4. DAO & DB interaction
+Service -> DAO : save(product)
+activate DAO
+DAO -> DB : INSERT INTO products (JPA Persist)
 activate DB
-DB --> Service : Trả về Category
+DB --> DAO : Success (New ID)
 deactivate DB
+DAO --> Service : Trả về Product (đã có ID)
+deactivate DAO
 
-alt Category không tồn tại
-    Service --> Controller : throw Exception("Danh mục không tồn tại")
-    Controller --> UI : 400 Bad Request
-    UI --> Admin : Hiển thị thông báo lỗi
-else Category hợp lệ
-    Service -> DB : findBrandById(brandId)
-    activate DB
-    DB --> Service : Trả về Brand
-    deactivate DB
+' 5. Response
+Service --> Controller : Trả về đối tượng Product vừa tạo
+deactivate Service
 
-    alt Brand không tồn tại
-        Service --> Controller : throw Exception("Thương hiệu không tồn tại")
-        Controller --> UI : 400 Bad Request
-        UI --> Admin : Hiển thị thông báo lỗi
-    else Brand hợp lệ
-        Service -> Service : Khởi tạo Product, gán thuộc tính\nvà map Category, Brand
+Controller --> UI : Render trang thành công (Thymeleaf)
+deactivate Controller
 
-        Service -> DB : save(product)
-        activate DB
-        DB --> Service : Trả về Product (đã có ID)
-        deactivate DB
-
-        Service -> DB : findByIdWithRelations(id)
-        activate DB
-        DB --> Service : Trả về dữ liệu Product đầy đủ\n(tránh lỗi Lazy Load)
-        deactivate DB
-
-        Service --> Controller : Trả về ProductResponse
-        deactivate Service
-
-        Controller --> UI : 201 Created (JSON: ProductResponse)
-        deactivate Controller
-
-        UI --> Admin : Thông báo thêm mới thành công và hiển thị sản phẩm
-        deactivate UI
-    end
-end
+UI --> Admin : Hiển thị thông báo thành công
+deactivate UI
 
 @enduml
