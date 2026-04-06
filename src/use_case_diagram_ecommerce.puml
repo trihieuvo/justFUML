@@ -2,7 +2,7 @@
 skinparam actorStyle awesome
 left to right direction
 
-actor "Khách hàng" as Guest
+actor "Khách vãng lai" as Guest
 actor "Thành viên" as User
 actor "Quản trị viên" as Admin
 
@@ -22,7 +22,7 @@ package "Quản lý Tài khoản" {
 }
 
 package "Duyệt & Tìm kiếm" {
-    usecase "Xem danh sách" as UC_ViewProd
+    usecase "Xem danh sách sản phẩm" as UC_ViewProd
     usecase "Xem chi tiết sản phẩm" as UC_ViewDetail
     usecase "Tìm kiếm & Lọc sản phẩm" as UC_Search
     usecase "Xem thông số kỹ thuật" as UC_ViewSpec
@@ -45,7 +45,7 @@ package "Giỏ hàng & Đặt hàng" {
 
 package "Quản lý đơn hàng" {
     usecase "Xem lịch sử đơn hàng" as UC_History
-    usecase "Xem chi tiết đơn hàng(mã đơn + email) " as UC_Order_Detail
+    usecase "Xem chi tiết đơn hàng(mã đơn) " as UC_Order_Detail
     usecase "Hủy đơn hàng" as UC_Cancel_Order
     usecase "Theo dõi trạng thái đơn hàng" as UC_Track_Order
 }
@@ -59,10 +59,11 @@ package "Đánh giá sản phẩm" {
 
 package "Quản trị hệ thống (Admin Only)" {
     usecase "Xem Dashboard & Thống kê" as UC_Dash
-    usecase "Quản lý Sản phẩm (CRUD)" as UC_Mng_Prod
-    usecase "Quản lý Danh mục/Thương hiệu" as UC_Mng_Cat
+    usecase "Quản lý Sản phẩm" as UC_Mng_Prod
+    usecase "Quản lý Danh mục" as UC_Mng_Cat
+    usecase "Quản lý Thương hiệu" as UC_Mng_Brand
     usecase "Quản lý Đơn hàng & Trạng thái" as UC_Mng_Order
-    usecase "Quản lý Người dùng & Phân quyền" as UC_Mng_User
+    usecase "Quản lý Người dùng" as UC_Mng_User
     usecase "Quản lý Mã giảm giá (Voucher)" as UC_Mng_Voucher
 }
 
@@ -85,7 +86,6 @@ User --> UC_Profile
 User --> UC_ChangePass
 User --> UC_Logout
 User --> UC_History
-User --> UC_Order_Detail
 User --> UC_Cancel_Order
 User --> UC_Track_Order
 User --> UC_Rate
@@ -95,6 +95,7 @@ User --> UC_Like_Review
 Admin --> UC_Dash
 Admin --> UC_Mng_Prod
 Admin --> UC_Mng_Cat
+Admin --> UC_Mng_Brand
 Admin --> UC_Mng_Order
 Admin --> UC_Mng_User
 Admin --> UC_Mng_Voucher
