@@ -36,134 +36,134 @@ package utesoundshop {
         EXPIRED
     }
 
-    class User {
-        - Long id
-        - String username
-        - String fullName
-        - String email
-        - String passwordHash
-        - String phoneNumber
-        - UserRole role
-        - UserStatus status
-        - LocalDateTime createdAt
-        - LocalDateTime updatedAt
-    }
+class User {
+- Long userID
+- String username
+- String fullName
+- String email
+- String passwordHash
+- String phoneNumber
+- UserRole role
+- UserStatus status
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
+}
 
-    class Address {
-        - Long id
-        - String recipientName
-        - String phoneNumber
-        - String streetAddress
-        - String province
-        - String provinceCode
-        - String ward
-        - String wardCode
-        - Boolean isDefault
-        - LocalDateTime createdAt
-        - LocalDateTime updatedAt
-    }
+class Address {
+- Long addressID
+- String recipientName
+- String phoneNumber
+- String streetAddress
+- String province
+- String provinceCode
+- String ward
+- String wardCode
+- Boolean isDefault
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
+}
 
-    class Brand {
-        - Long id
-        - String name
-        - String description
-        - String logoUrl
-        - LocalDateTime createdAt
-        - LocalDateTime updatedAt
-    }
+class Brand {
+- Long brandID
+- String name
+- String description
+- String logoUrl
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
+}
 
-    class Category {
-        - Long id
-        - String name
-        - String description
-        - LocalDateTime createdAt
-        - LocalDateTime updatedAt
-    }
+class Category {
+- Long categoryID
+- String name
+- String description
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
+}
 
-    class Product {
-        - Long id
-        - String name
-        - String description
-        - BigDecimal price
-        - String thumbnailUrl
-        - String specifications
-        - Boolean status
-        - LocalDateTime createdAt
-        - LocalDateTime updatedAt
-    }
+class Product {
+- Long productID
+- String name
+- String description
+- BigDecimal price
+- String thumbnailUrl
+- String specifications
+- Boolean status
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
+}
 
-    class Inventory {
-        - Long id
-        - Integer stockQuantity
-        - LocalDateTime createdAt
-        - LocalDateTime updatedAt
-    }
+class Inventory {
+- Long inventoryID
+- Integer stockQuantity
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
+}
 
-    class ProductImage {
-        - Long id
-        - String imageUrl
-        - String altText
-        - Boolean isPrimary
-        - LocalDateTime createdAt
-    }
+class ProductImage {
+- Long imageID
+- String imageUrl
+- String altText
+- Boolean isPrimary
+- LocalDateTime createdAt
+}
 
-    class Cart {
-        - Long id
-        - LocalDateTime createdAt
-        - LocalDateTime updatedAt
-    }
+class Cart {
+- Long cartID
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
+}
 
-    class CartItem {
-        - Long id
-        - Integer quantity
-        - LocalDateTime createdAt
-        - LocalDateTime updatedAt
-    }
+class CartItem {
+- Long cartItemID
+- Integer quantity
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
+}
 
-    class Order {
-        - Long id
-        - String orderCode
-        - String email
-        - String recipientName
-        - String phoneNumber
-        - String address
-        - OrderStatus status
-        - BigDecimal totalAmount
-        - LocalDateTime createdAt
-        - LocalDateTime updatedAt
-    }
+class Order {
+- Long orderID
+- String orderCode
+- String email
+- String recipientName
+- String phoneNumber
+- String address
+- OrderStatus status
+- BigDecimal totalAmount
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
+}
 
-    class OrderItem {
-        - Long id
-        - Integer quantity
-        - LocalDateTime createdAt
-    }
+class OrderItem {
+- Long orderItemID
+- Integer quantity
+- LocalDateTime createdAt
+}
 
-    class Voucher {
-        - Long id
-        - String code
-        - DiscountType discountType
-        - BigDecimal discountValue
-        - Integer maxUsage
-        - BigDecimal minOrderValue
-        - LocalDateTime expiryDate
-        - VoucherStatus status
-        - LocalDateTime createdAt
-        - LocalDateTime updatedAt
-    }
+class Voucher {
+- Long voucherID
+- String code
+- DiscountType discountType
+- BigDecimal discountValue
+- Integer maxUsage
+- BigDecimal minOrderValue
+- LocalDateTime expiryDate
+- VoucherStatus status
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
+}
 
-    class Review {
-        - Long id
-        - Integer rating
-        - String comment
-        - LocalDateTime createdAt
-        - LocalDateTime updatedAt
-    }
+class Review {
+- Long reviewID
+- Integer rating
+- String comment
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
+}
 
-    class ReviewLike {
-        - Long id
-        - LocalDateTime createdAt
-    }
+class ReviewLike {
+- Long reviewLikeID
+- LocalDateTime createdAt
+}
 
     ' === 1. COMPOSITION (*-->) Hình thoi đặc: Áp dụng cho CascadeType.ALL ===
     User "1" *--> "*" Address : has
