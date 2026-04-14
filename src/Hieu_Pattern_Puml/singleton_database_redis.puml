@@ -1,0 +1,67 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+
+' --- Singleton 1: Eager Initialization ---
+class DatabaseConfig <<Singleton>> {
+    - {static} uniqueInstance : DatabaseConfig
+    --
+    - DatabaseConfig()
+    + {static} getInstance() : DatabaseConfig
+    + getEntityManager() : EntityManager
+    + beginTransaction()
+    + commitTransaction()
+    + rollbackTransaction()
+    + closeEntityManager()
+}
+
+' --- Singleton 2: Thread-Safe (Double-Checked Locking) ---
+class RedisConfig <<Singleton>> {
+    - {static} volatile instance : RedisConfig
+    - jedisPool : JedisPool
+    - isRedisAvailable : boolean
+    --
+    - RedisConfig()
+    + {static} getInstance() : RedisConfig
+    + getJedis() : Jedis
+    + isAvailable() : boolean
+}
+
+' --- Singleton 3: Synchronized Lazy ---
+class UserDAOImpl <<Singleton>> {
+    - {static} instance : UserDAOImpl
+    --
+    - UserDAOImpl()
+    + {static} synchronized getInstance() : UserDAOImpl
+    + findByEmail(email : String) : Optional<User>
+    + save(user : User) : User
+    + ...
+}
+
+' --- Relationships ---
+UserDAOImpl ..> DatabaseConfig : "uses getInstance()"
+DatabaseConfig ..> RedisConfig : " "
+
+' --- Notes ---
+note right of DatabaseConfig
+  **Eager Singleton**
+  Khởi tạo instance ngay khi class load.
+  Luôn an toàn về mặt đa luồng.
+  Quản lý EntityManager (JPA/Hibernate).
+end note
+
+note right of RedisConfig
+  **Thread-Safe Singleton**
+  (Double-Checked Locking)
+  Biến instance dùng từ khóa **volatile**.
+  Khởi tạo trễ (Lazy) trong getInstance().
+  Sử dụng block **synchronized** bảo vệ.
+end note
+
+note right of UserDAOImpl
+  **Synchronized Lazy Singleton**
+  Sử dụng synchronized trên method
+  getInstance() để đảm bảo thread-safe.
+  Chỉ tạo instance khi được gọi lần đầu.
+end note
+
+@enduml

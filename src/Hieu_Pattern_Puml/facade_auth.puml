@@ -1,0 +1,77 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+
+' --- Facade ---
+class AuthFacade <<Facade>> {
+    - userService : UserService
+    - redisService : RedisService
+    - emailService : EmailService
+    --
+    + AuthFacade()
+    + requestRegister(request : RegisterRequest)
+    + verifyRegister(email : String, inputOtp : String)
+    + requestForgotPassword(email : String)
+    + verifyForgotPassword(email : String, inputOtp : String)
+    + resetPassword(email, otp, newPassword : String)
+    - checkAntiSpam(email : String)
+    - handleFailedAttempt(email : String)
+}
+
+' --- Subsystem Classes ---
+class UserService <<Subsystem>> {
+    + registerPendingUser(request : RegisterRequest)
+    + activateUser(email : String)
+    + isEmailExists(email : String) : boolean
+    + resetPassword(email, newPassword : String)
+}
+
+class RedisService <<Subsystem>> {
+    + canSendOtp(email : String) : boolean
+    + saveRegisterOtp(email, otp : String)
+    + verifyRegisterOtp(email, otp : String) : boolean
+    + setOtpCooldown(email : String)
+    + incrementOtpAttempt(email : String) : int
+    + isOtpBlocked(email : String) : boolean
+    + clearOtpAttempts(email : String)
+}
+
+class EmailService <<Subsystem>> {
+    + generateOTP() : String
+    + sendOtp(email, otp : String) : boolean
+}
+
+' --- Client ---
+class AuthController <<Client>> {
+    - authFacade : AuthFacade
+    --
+    + init()
+    + doPost(req, resp)
+}
+
+' --- Relationships ---
+AuthFacade --> UserService : "quản lý tài khoản"
+AuthFacade --> RedisService : "OTP & anti-spam"
+AuthFacade --> EmailService : "gửi mã OTP"
+AuthController ..> AuthFacade : "calls"
+
+' --- Notes ---
+note bottom of AuthFacade
+  **Facade Pattern**
+  Gộp toàn bộ luồng Auth phức tạp:
+  1. Anti-spam check (Redis)
+  2. Tạo User PENDING (UserService)
+  3. Sinh OTP (EmailService)
+  4. Lưu OTP cache (Redis)
+  5. Gửi email (EmailService)
+  → Controller chỉ cần 1 dòng gọi.
+end note
+
+note top of AuthController
+  **Client gọi Facade:**
+  authFacade.requestRegister(body)
+  authFacade.verifyRegister(email, otp)
+  Không cần biết bên trong 
+  có bao nhiêu service phối hợp.
+end note
+
+@enduml

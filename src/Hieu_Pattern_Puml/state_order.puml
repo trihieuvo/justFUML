@@ -1,0 +1,99 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+
+' --- State Interface ---
+interface OrderState <<State>> {
+    + processOrder(context : OrderContext)
+    + shipOrder(context : OrderContext)
+    + deliverOrder(context : OrderContext)
+    + cancelOrder(context : OrderContext, reason : String)
+}
+
+' --- Context ---
+class OrderContext <<Context>> {
+    - order : Order
+    - state : OrderState
+    - notificationService : OrderNotificationService
+    - restockService : RestockService
+    --
+    + OrderContext(order : Order)
+    + OrderContext(order, notificationService, restockService)
+    + setState(state : OrderState)
+    + processOrder()
+    + shipOrder()
+    + deliverOrder()
+    + cancelOrder(reason : String)
+    + getOrder() : Order
+    + getNotificationService() : OrderNotificationService
+    + getRestockService() : RestockService
+}
+
+' --- Concrete States ---
+class PendingState <<ConcreteState>> {
+    + processOrder(context : OrderContext)
+    + cancelOrder(context : OrderContext, reason : String)
+}
+
+class ProcessingState <<ConcreteState>> {
+    + shipOrder(context : OrderContext)
+    + cancelOrder(context : OrderContext, reason : String)
+}
+
+class ShippingState <<ConcreteState>> {
+    + deliverOrder(context : OrderContext)
+    + cancelOrder(context : OrderContext, reason : String)
+}
+
+class DeliveredState <<ConcreteState>> {
+}
+
+class CancelledState <<ConcreteState>> {
+}
+
+' --- Data Entity ---
+class Order {
+    - id : Long
+    - orderCode : String
+    - status : OrderStatus
+    - totalAmount : BigDecimal
+    - ...
+}
+
+' --- Relationships ---
+OrderContext o--> "1" OrderState : "current_state"
+OrderContext o--> "1" Order : "holds"
+OrderState <|.. PendingState : "implements"
+OrderState <|.. ProcessingState : "implements"
+OrderState <|.. ShippingState : "implements"
+OrderState <|.. DeliveredState : "implements"
+OrderState <|.. CancelledState : "implements"
+
+' --- State Transitions ---
+PendingState ..> ProcessingState : "<<creates>>"
+ProcessingState ..> ShippingState : "<<creates>>"
+ShippingState ..> DeliveredState : "<<creates>>"
+PendingState ..> CancelledState : "<<creates>>"
+
+' --- Notes ---
+note left of OrderContext::state
+  Lưu trữ trạng thái hiện tại.
+  Mọi hành động như processOrder() 
+  đều ủy quyền (delegate) qua:
+  this.state.processOrder(this)
+end note
+
+note right of PendingState::processOrder
+  **Chuyển cảnh (Transition):**
+  1. Cập nhật Order.status = PROCESSING
+  2. context.setState(new ProcessingState())
+  3. Gửi Email thông báo qua
+     context.getNotificationService()
+end note
+
+note bottom of DeliveredState
+  Trạng thái kết thúc (Terminal).
+  Mọi hành động đều ném 
+  IllegalStateException.
+end note
+
+@enduml

@@ -1,0 +1,79 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+
+' --- Factory ---
+class PaymentStrategyFactory <<Factory>> {
+    - {static} STRATEGIES : Map<String, Supplier<PaymentStrategy>>
+    --
+    - PaymentStrategyFactory()
+    + {static} fromCode(code : String) : PaymentStrategy
+    + {static} isValidCode(code : String) : boolean
+}
+
+' --- Product Interface ---
+interface PaymentStrategy <<Product>> {
+    + pay(amount : BigDecimal) : PaymentResult
+    + getStrategyCode() : String
+}
+
+' --- Concrete Products ---
+class CODStrategy <<ConcreteProduct>> {
+    + pay(amount : BigDecimal) : PaymentResult
+    + getStrategyCode() : String
+}
+
+class MomoStrategy <<ConcreteProduct>> {
+    + pay(amount : BigDecimal) : PaymentResult
+    + getStrategyCode() : String
+}
+
+class BankTransferStrategy <<ConcreteProduct>> {
+    + pay(amount : BigDecimal) : PaymentResult
+    + getStrategyCode() : String
+}
+
+class StorePickupStrategy <<ConcreteProduct>> {
+    + pay(amount : BigDecimal) : PaymentResult
+    + getStrategyCode() : String
+}
+
+class SePayStrategy <<ConcreteProduct>> {
+    + pay(amount : BigDecimal) : PaymentResult
+    + getStrategyCode() : String
+}
+
+' --- Client ---
+class CheckoutServiceImpl <<Client>> {
+    + checkout(userId : Long, request : CheckoutRequest) : CheckoutResponse
+}
+
+' --- Relationships ---
+PaymentStrategy <|.. CODStrategy
+PaymentStrategy <|.. MomoStrategy
+PaymentStrategy <|.. BankTransferStrategy
+PaymentStrategy <|.. StorePickupStrategy
+PaymentStrategy <|.. SePayStrategy
+PaymentStrategyFactory ..> PaymentStrategy : "<<creates>>"
+CheckoutServiceImpl ..> PaymentStrategyFactory : "uses"
+
+' --- Notes ---
+note right of PaymentStrategyFactory
+  **Simple Factory (Static Factory)**
+  Dùng Map<String, Supplier<PaymentStrategy>>
+  để ánh xạ mã thanh toán ("COD", "MOMO"...) 
+  thành đối tượng Strategy tương ứng.
+  
+  Constructor private → Utility class,
+  không cho phép tạo instance.
+end note
+
+note bottom of CheckoutServiceImpl
+  **Client gọi Factory:**
+  PaymentStrategy strategy = 
+    PaymentStrategyFactory.fromCode(
+      request.getPaymentMethod()
+    );
+  PaymentResult result = strategy.pay(total);
+end note
+
+@enduml

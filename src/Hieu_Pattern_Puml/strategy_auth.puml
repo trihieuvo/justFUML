@@ -1,0 +1,68 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+
+' --- Interface ---
+interface LoginStrategy <<Strategy>> {
+    + authenticate(request : AuthRequest) : User
+}
+
+' --- Concrete Strategies ---
+class LocalLoginStrategy <<ConcreteStrategy>> {
+    - userDAO : UserDAO
+    --
+    + LocalLoginStrategy()
+    + authenticate(request : AuthRequest) : User
+}
+
+class GoogleLoginStrategy <<ConcreteStrategy>> {
+    - userDAO : UserDAO
+    --
+    + GoogleLoginStrategy()
+    + authenticate(request : AuthRequest) : User
+}
+
+' --- Context ---
+class AuthServiceImpl <<Context>> {
+    - strategies : Map<LoginType, LoginStrategy>
+    --
+    + AuthServiceImpl()
+    + login(loginType : LoginType, request : AuthRequest) : User
+}
+
+' --- Data Entity ---
+class User {
+    - id : Long
+    - username : String
+    - email : String
+    - role : UserRole
+    - ...
+}
+
+' --- Relationships ---
+LoginStrategy <|.. LocalLoginStrategy
+LoginStrategy <|.. GoogleLoginStrategy
+AuthServiceImpl o-> "1..*" LoginStrategy : "uses >"
+LoginStrategy ..> User : "<<returns>>"
+
+' --- Notes ---
+note bottom of AuthServiceImpl
+  **Context Object**
+  Duy trì danh sách (Map) các Strategy.
+  Khi gọi hàm login(), tự động tra cứu 
+  Strategy phù hợp qua LoginType 
+  mà không cần viết if-else.
+end note
+
+note bottom of LocalLoginStrategy
+  **Thuật toán Local**
+  Tìm dữ liệu từ DB, băm BCrypt
+  so khớp Password.
+end note
+
+note bottom of GoogleLoginStrategy
+  **Thuật toán Google**
+  Bóc tách Google Profile, 
+  Adapt sang User rồi nhét vào DB.
+end note
+
+@enduml

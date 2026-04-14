@@ -1,0 +1,86 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+
+' --- Interface ---
+interface PaymentStrategy <<Strategy>> {
+    + pay(amount : BigDecimal) : PaymentResult
+    + getStrategyCode() : String
+}
+
+' --- Concrete Strategies ---
+class CODStrategy <<ConcreteStrategy>> {
+    + pay(amount : BigDecimal) : PaymentResult
+    + getStrategyCode() : String
+}
+
+class MomoStrategy <<ConcreteStrategy>> {
+    + pay(amount : BigDecimal) : PaymentResult
+    + getStrategyCode() : String
+}
+
+class BankTransferStrategy <<ConcreteStrategy>> {
+    + pay(amount : BigDecimal) : PaymentResult
+    + getStrategyCode() : String
+}
+
+class StorePickupStrategy <<ConcreteStrategy>> {
+    + pay(amount : BigDecimal) : PaymentResult
+    + getStrategyCode() : String
+}
+
+class SePayStrategy <<ConcreteStrategy>> {
+    + pay(amount : BigDecimal) : PaymentResult
+    + getStrategyCode() : String
+}
+
+' --- Context ---
+class CheckoutServiceImpl <<Context>> {
+    - voucherService : VoucherService
+    - userDAO : UserDAO
+    - orderNotificationService : OrderNotificationService
+    --
+    + checkout(userId : Long, request : CheckoutRequest) : CheckoutResponse
+}
+
+' --- Result ---
+class PaymentResult <<record>> {
+    - success : boolean
+    - message : String
+    - transactionId : String
+    --
+    + {static} success(message : String) : PaymentResult
+    + {static} success(message, transactionId) : PaymentResult
+    + {static} failure(message : String) : PaymentResult
+}
+
+' --- Relationships ---
+PaymentStrategy <|.. CODStrategy
+PaymentStrategy <|.. MomoStrategy
+PaymentStrategy <|.. BankTransferStrategy
+PaymentStrategy <|.. StorePickupStrategy
+PaymentStrategy <|.. SePayStrategy
+CheckoutServiceImpl ..> PaymentStrategy : "uses >"
+PaymentStrategy ..> PaymentResult : "<<returns>>"
+
+' --- Notes ---
+note bottom of CheckoutServiceImpl
+  **Context Object**
+  Gọi PaymentStrategyFactory.fromCode(code) 
+  để lấy đúng Strategy, sau đó gọi
+  strategy.pay(finalTotal) mà không cần 
+  biết cụ thể là COD hay Momo.
+end note
+
+note bottom of CODStrategy
+  Trả PaymentResult.success() ngay
+  vì chưa có giao dịch thực tế 
+  tại thời điểm đặt hàng.
+end note
+
+note bottom of SePayStrategy
+  Trả PaymentResult pending,
+  yêu cầu khách quét QR để 
+  hoàn tất thanh toán.
+end note
+
+@enduml

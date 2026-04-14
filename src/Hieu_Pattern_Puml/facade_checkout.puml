@@ -1,0 +1,72 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+
+' --- Facade ---
+interface CheckoutService <<Facade Interface>> {
+    + checkout(userId : Long, request : CheckoutRequest) : CheckoutResponse
+}
+
+class CheckoutServiceImpl <<Facade>> {
+    - voucherService : VoucherService
+    - userDAO : UserDAO
+    - orderNotificationService : OrderNotificationService
+    --
+    + checkout(userId : Long, request : CheckoutRequest) : CheckoutResponse
+    - validateCheckoutRequest(request : CheckoutRequest)
+    - validateGuestContactInfo(request : CheckoutRequest)
+    - generateOrderCode() : String
+}
+
+' --- Subsystem Classes ---
+class VoucherService <<Subsystem>> {
+    + validateVoucher(code, total, userId) : VoucherValidationResult
+    + calculateDiscount(voucher, total) : BigDecimal
+}
+
+class UserDAO <<Subsystem>> {
+    + findByEmail(email : String) : Optional<User>
+    + findByPhoneNumber(phone : String) : Optional<User>
+}
+
+class PaymentStrategyFactory <<Subsystem>> {
+    + {static} fromCode(code : String) : PaymentStrategy
+}
+
+class OrderNotificationService <<Subsystem>> {
+    + notifyProcessing(order : Order)
+}
+
+' --- Client ---
+class CheckoutController <<Client>> {
+    + doPost(req, resp)
+}
+
+' --- Relationships ---
+CheckoutService <|.. CheckoutServiceImpl : "implements"
+CheckoutServiceImpl --> VoucherService : "validates voucher"
+CheckoutServiceImpl --> UserDAO : "checks user"
+CheckoutServiceImpl --> PaymentStrategyFactory : "creates strategy"
+CheckoutServiceImpl --> OrderNotificationService : "sends notification"
+CheckoutController ..> CheckoutService : "calls checkout()"
+
+' --- Notes ---
+note bottom of CheckoutServiceImpl
+  **Facade Pattern**
+  Gộp toàn bộ workflow phức tạp vào 1 hàm
+  checkout() duy nhất:
+  1. Validate dữ liệu đầu vào
+  2. Kiểm tra tồn kho (Product)
+  3. Áp voucher giảm giá
+  4. Xử lý thanh toán (Strategy)
+  5. Tạo Order + OrderItem + trừ kho
+  6. Gửi email thông báo (Observer)
+end note
+
+note top of CheckoutController
+  **Client** chỉ cần gọi: 
+  checkoutService.checkout(userId, request)
+  mà không cần quan tâm bên trong 
+  có bao nhiêu service/subsystem.
+end note
+
+@enduml
