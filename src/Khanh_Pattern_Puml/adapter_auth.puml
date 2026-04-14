@@ -1,0 +1,57 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+
+' --- Adaptee (Lớp cần được tương thích) ---
+class GoogleProfile <<Adaptee>> {
+    - googleId : String
+    - email : String
+    - name : String
+    - pictureUrl : String
+    - ...
+    --
+    + getEmail() : String
+    + getName() : String
+    + getPictureUrl() : String
+}
+
+' --- Target (Giao diện mong muốn) ---
+interface OAuthUserAdapter <<Target>> {
+    + adaptToUser() : User
+}
+
+' --- Adapter (Lớp bọc/chuyển đổi) ---
+class GoogleToUserAdapter <<Adapter>> {
+    - googleProfile : GoogleProfile
+    --
+    + GoogleToUserAdapter(profile : GoogleProfile)
+    + adaptToUser() : User
+}
+
+' --- Client (Người sử dụng) ---
+class GoogleLoginStrategy <<Client>> {
+    + authenticate(request : AuthRequest) : User
+    --
+    - processGoogleLogin()
+}
+
+' --- Relationships ---
+GoogleToUserAdapter ..|> OAuthUserAdapter : implements
+GoogleToUserAdapter *--> "1" GoogleProfile : "wraps / Adaptee"
+GoogleLoginStrategy ..> OAuthUserAdapter : "uses"
+
+' --- Notes ---
+note bottom of GoogleToUserAdapter
+  **Adapter Logic:**
+  user.setEmail(googleProfile.getEmail())
+  user.setFullName(googleProfile.getName())
+  user.setRole(UserRole.customer)
+end note
+
+note top of GoogleLoginStrategy
+  Client chỉ giao tiếp với
+  giao diện **OAuthUserAdapter**
+  (Target) mà không quan tâm 
+  GoogleProfile hình thù ra sao.
+end note
+
+@enduml

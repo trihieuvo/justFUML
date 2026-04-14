@@ -1,0 +1,18 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+
+class DatabaseConfig <<Singleton>> {
+    - {static} uniqueInstance : DatabaseConfig
+    --
+    - DatabaseConfig()
+    + {static} getInstance() : DatabaseConfig
+    + getEntityManager() : EntityManager
+}
+
+note right of DatabaseConfig
+  **Eager Singleton**
+  - Khởi tạo instance ngay khi class load.
+  - Luôn an toàn về mặt đa luồng.
+end note
+
+@enduml

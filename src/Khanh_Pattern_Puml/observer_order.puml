@@ -1,0 +1,84 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+
+' --- Subject (Nhà phát hành) ---
+interface OrderSubject <<Subject>> {
+    + addObserver(observer : OrderObserver)
+    + removeObserver(observer : OrderObserver)
+    + notifyObservers(order : Order, event : OrderEventType, reason : String)
+}
+
+' --- Concrete Subject ---
+class OrderServiceImpl <<ConcreteSubject>> {
+    - observers : List<OrderObserver>
+    - orderDao : OrderDao
+    --
+    + OrderServiceImpl()
+    + processOrder(orderId : Long) : Order
+    + shipOrder(orderId : Long) : Order
+    + deliverOrder(orderId : Long) : Order
+    + cancelOrder(orderId : Long, reason : String) : Order
+    + addObserver(observer : OrderObserver)
+    + removeObserver(observer : OrderObserver)
+    + notifyObservers(order, event, reason)
+}
+
+' --- Observer (Người Lắng nghe) ---
+interface OrderObserver <<Observer>> {
+    + onOrderEvent(order : Order, event : OrderEventType, reason : String)
+}
+
+' --- Concrete Observers ---
+class EmailOrderObserver <<ConcreteObserver>> {
+    - logger : Logger
+    --
+    + onOrderEvent(order, event, reason)
+    - sendMail(toEmail, subject, html)
+    - buildProcessingTemplate(order)
+    - buildShippedTemplate(order)
+}
+
+' --- Data Flow (Event Object) ---
+enum OrderEventType {
+    ORDER_PROCESSING
+    ORDER_SHIPPING
+    ORDER_DELIVERED
+    ORDER_CANCELLED
+}
+
+' --- Relationships ---
+OrderSubject <|.. OrderServiceImpl : "implements"
+OrderObserver <|.. EmailOrderObserver : "implements"
+OrderSubject -> "notify" OrderObserver : ""
+OrderServiceImpl o--> "*" OrderObserver : "observers"
+OrderObserver ..> OrderEventType : "uses"
+OrderSubject ..> Order : "data"
+OrderObserver ..> Order : "handles"
+
+' --- Data Entities (Abbreviated) ---
+class Order {
+    - id : Long
+    - orderCode : String
+    - status : OrderStatus
+    - totalAmount : BigDecimal
+    - ...
+}
+
+' --- Notes ---
+note right of OrderServiceImpl::notifyObservers
+  Mỗi khi hàm processOrder() 
+  bị gọi, nó sẽ móc nối 
+  hàm notifyObservers() 
+  để bắn sự kiện thông qua 
+  vòng lặp for-each.
+end note
+
+note bottom of EmailOrderObserver
+  Chạy Multithreading: 
+  Sự kiện gửi Email sẽ được quăng
+  vào 1 Thread ẩn (Daemon Thread)
+  để không làm giật Lag
+  Request chính của User.
+end note
+
+@enduml

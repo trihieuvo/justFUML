@@ -1,0 +1,75 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+
+' --- Base Handler ---
+abstract class AuthHandler <<Handler>> {
+    # next : AuthHandler
+    --
+    + setNext(next : AuthHandler) : AuthHandler
+    + {abstract} handle(request, response, chain)
+    # handleNext(request, response, chain)
+}
+
+' --- Concrete Handlers ---
+class TokenValidationHandler <<ConcreteHandler>> {
+    - jwtUtil : JwtUtil
+    - redisService : RedisService
+    + handle(request, response, chain)
+}
+
+class AdminRoleHandler <<ConcreteHandler>> {
+    + handle(request, response, chain)
+}
+
+class PermitAllHandler <<ConcreteHandler>> {
+    + handle(request, response, chain)
+}
+
+class AuthenticationCheckHandler <<ConcreteHandler>> {
+    + handle(request, response, chain)
+}
+
+' --- Client ---
+class JwtAuthenticationFilter <<Client/Filter>> {
+    - headHandler : AuthHandler
+    --
+    + JwtAuthenticationFilter()
+    + doFilter(request, response, chain)
+}
+
+' --- Relationships ---
+AuthHandler o--> "1" AuthHandler : "next"
+AuthHandler <|-- TokenValidationHandler
+AuthHandler <|-- AdminRoleHandler
+AuthHandler <|-- PermitAllHandler
+AuthHandler <|-- AuthenticationCheckHandler
+
+JwtAuthenticationFilter *--> "1" AuthHandler : "headHandler"
+
+' --- Notes ---
+note bottom of JwtAuthenticationFilter
+  **Khởi tạo Chuỗi (Chain Setup):**
+  tokenValidationHandler
+    .setNext(adminRoleHandler)
+    .setNext(permitAllHandler)
+    .setNext(authCheckHandler);
+end note
+
+note right of AuthHandler::handleNext
+  Nút thắt của Pattern:
+  Nếu `next != null`, chuyển tiếp Request
+  cho Handler tĩnh tiếp theo.
+  Nếu xử lý thành công, cho phép đi tiếp.
+end note
+
+note bottom of TokenValidationHandler
+  1. Thêm UserId/Email
+  vào request nếu Token hợp lệ
+end note
+
+note bottom of AdminRoleHandler
+  2. Chặn lại ngay lập tức
+  nếu URL là /admin mà
+  Role != admin
+end note
+@enduml

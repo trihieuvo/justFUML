@@ -1,0 +1,23 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+
+class RedisConfig <<Singleton>> {
+    - {static} volatile instance : RedisConfig
+    - jedisPool : JedisPool
+    - isRedisAvailable : boolean
+    --
+    - RedisConfig()
+    + {static} getInstance() : RedisConfig
+    + getJedis() : Jedis
+    + isAvailable() : boolean
+}
+
+note right of RedisConfig
+  **Thread-Safe Singleton**
+  (Double-Checked Locking)
+  - Biến instance dùng từ khóa **volatile**.
+  - Khởi tạo trễ (Lazy) trong getInstance().
+  - Sử dụng block **synchronized** bảo vệ.
+end note
+
+@enduml

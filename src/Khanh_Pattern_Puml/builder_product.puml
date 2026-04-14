@@ -1,0 +1,72 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+
+' --- Product (Sản phẩm phức tạp) ---
+class Product {
+    - id : Long
+    - name : String
+    - description : String
+    - price : BigDecimal
+    - thumbnailUrl : String
+    - specifications : String
+    - status : Boolean
+    - category : Category
+    - brand : Brand
+    - ...
+    --
+}
+
+' --- Builder Interface ---
+interface ProductBuilder <<Builder>> {
+    + name(name : String) : ProductBuilder
+    + description(desc : String) : ProductBuilder
+    + price(price : BigDecimal) : ProductBuilder
+    + thumbnailUrl(url : String) : ProductBuilder
+    + specifications(spec : String) : ProductBuilder
+    + status(status : Boolean) : ProductBuilder
+    + category(cat : Category) : ProductBuilder
+    + brand(brand : Brand) : ProductBuilder
+    + build() : Product
+}
+
+' --- Concrete Builder ---
+class DefaultProductBuilder <<ConcreteBuilder>> {
+    - product : Product
+    --
+    + DefaultProductBuilder()
+    + DefaultProductBuilder(product : Product)
+    + name(name : String) : ProductBuilder
+    + build() : Product
+}
+
+' --- Client/Director ---
+class ProductServiceImpl <<Client/Director>> {
+    + createProduct(request : CreateProductRequest) : Product
+    + updateProduct(id : Long, request : CreateProductRequest) : Product
+}
+
+' --- Relationships ---
+ProductBuilder <|.. DefaultProductBuilder : "implements"
+DefaultProductBuilder *--> "1" Product : "builds/creates/updates"
+ProductServiceImpl ..> ProductBuilder : "uses"
+
+' --- Notes ---
+note right of DefaultProductBuilder::build
+  Trả về sản phẩm đã 
+  được lắp ráp hoàn chỉnh.
+  return this.product;
+end note
+
+note bottom of ProductServiceImpl
+  **Cách Client (Director) dùng:**
+  
+  // Tạo mới:
+  ProductBuilder creator = new DefaultProductBuilder()
+      .name(request.getName()).build();
+      
+  // Cập nhật:
+  ProductBuilder updater = new DefaultProductBuilder(existingProduct)
+      .name(request.getName()).build();
+end note
+
+@enduml
