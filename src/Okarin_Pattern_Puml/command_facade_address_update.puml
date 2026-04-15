@@ -1,0 +1,93 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+skinparam wrapWidth 250
+skinparam spacing 50
+top to bottom direction
+
+' --- Abstract Class ---
+abstract class ProfileCommand <<Command>> {
+    # facade : UserProfileFacade
+    # templateEngine : IEngine
+    # application : App
+    + init(facade, templateEngine, app)
+    + {abstract} execute(req, resp, userId)
+    # render(req, resp, template, context)
+    # createWebContext(req, resp)
+}
+
+' --- Interface ---
+interface UserProfileFacade <<Facade>> {
+    + getUserAddresses(userId)
+    + addAddress(userId, address)
+    + updateAddress(userId, address)
+    + deleteAddress(addressId)
+    + setDefaultAddress(userId, addressId)
+    + extractAddressFromRequest(req)
+}
+
+' --- Concrete Commands ---
+class EditAddressCommand <<ConcreteCommand>> {
+    + execute(req, resp, userId)
+}
+class AddAddressCommand <<ConcreteCommand>> {
+    + execute(req, resp, userId)
+}
+class DeleteAddressCommand <<ConcreteCommand>> {
+    + execute(req, resp, userId)
+}
+class SetDefaultAddressCommand <<ConcreteCommand>> {
+    + execute(req, resp, userId)
+}
+
+' --- Factory ---
+class ProfileCommandFactory <<Factory>> {
+    - {static} commands : Map
+    + {static} getCommand(method, path)
+}
+
+' --- Client / Controller ---
+class UserProfileController <<Invoker>> {
+    - profileFacade : UserProfileFacade
+    - templateEngine : IEngine
+    - application : App
+    + init()
+    # doGet(req, resp)
+    # doPost(req, resp)
+    - processRequest(req, resp)
+}
+
+' --- Subsystems ---
+class AddressServiceImpl <<Subsystem>>
+class UserServiceImpl <<Subsystem>>
+
+' --- Relationships ---
+ProfileCommand <|-- EditAddressCommand
+ProfileCommand <|-- AddAddressCommand
+ProfileCommand <|-- DeleteAddressCommand
+ProfileCommand <|-- SetDefaultAddressCommand
+
+UserProfileController ..> ProfileCommandFactory : "<<uses>>"
+ProfileCommandFactory ..> ProfileCommand : "<<creates>>"
+UserProfileController *--> "1" UserProfileFacade : "<<manages lifecycle>>"
+ProfileCommand o--> "1" UserProfileFacade : "<<uses>>"
+UserProfileFacade ..> AddressServiceImpl : "<<delegates>>"
+UserProfileFacade ..> UserServiceImpl : "<<delegates>>"
+
+note bottom of UserProfileController
+  **Invoker Controller**
+  Khởi tạo UserProfileFacade.
+  Route request bằng Factory thay vì if/else.
+end note
+
+note bottom of ProfileCommandFactory
+  **Factory Method**
+  Sinh object tuỳ route (/address/edit,...)
+end note
+
+note bottom of UserProfileFacade
+  **Facade Layer**
+  Xử lý logic raw request và uỷ thác 
+  vào Service chính xác.
+end note
+
+@enduml

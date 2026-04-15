@@ -1,0 +1,76 @@
+@startuml
+skinparam ClassAttributeIconSize 0
+skinparam wrapWidth 250
+skinparam spacing 50
+top to bottom direction
+
+' --- Abstract Class ---
+abstract class OrderCommand <<Command>> {
+    # facade : OrderFacade
+    # templateEngine : IEngine
+    # application : App
+    + init(facade, templateEngine, app)
+    + {abstract} execute(req, resp)
+    # render(req, resp, template, context)
+    # createWebContext(req, resp)
+}
+
+' --- Interfaces ---
+interface OrderFacade <<Facade>> {
+    + getOrdersByOrderCodes(codes: List)
+    + getOrderByOrderCode(code: String)
+}
+
+' --- Concrete Commands ---
+class TrackOrderCommand <<ConcreteCommand>> {
+    + execute(req, resp)
+}
+
+' --- Factory ---
+class OrderCommandFactory <<Factory>> {
+    - {static} commands : Map
+    + {static} getCommand(method, path)
+}
+
+' --- Client / Controller ---
+class OrderTrackingController <<Invoker>> {
+    - orderFacade : OrderFacade
+    - templateEngine : IEngine
+    - application : App
+    + init()
+    # doGet(req, resp)
+    # doPost(req, resp)
+    - processRequest(req, resp)
+}
+
+' --- Subsystems ---
+class OrderServiceImpl <<Subsystem>>
+class PaymentServiceImpl <<Subsystem>>
+
+' --- Relationships ---
+OrderCommand <|-- TrackOrderCommand : "<<extends>>"
+OrderTrackingController ..> OrderCommandFactory : "<<uses>>"
+OrderCommandFactory ..> OrderCommand : "<<creates>>"
+OrderTrackingController *--> "1" OrderFacade : "<<manages lifecycle>>"
+OrderCommand o--> "1" OrderFacade : "<<uses>>"
+OrderFacade ..> OrderServiceImpl : "<<delegates>>"
+OrderFacade ..> PaymentServiceImpl : "<<delegates>>"
+
+note bottom of OrderTrackingController
+  **Invoker Controller**
+  Khởi tạo OrderFacade.
+  Quản trị vòng đời (Composition).
+end note
+
+note bottom of OrderCommandFactory
+  **Factory Method**
+  Sử dụng Map để phân bổ luồng
+  (GET/POST) thành đối tượng Command.
+end note
+
+note bottom of OrderCommand
+  **Abstract Command**
+  Sở hữu sẵn Facade và view engine.
+end note
+
+@enduml
