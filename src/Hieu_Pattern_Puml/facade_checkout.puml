@@ -1,5 +1,8 @@
 @startuml
 skinparam ClassAttributeIconSize 0
+top to bottom direction
+skinparam ranksep 0
+skinparam nodesep 120
 
 ' --- Facade ---
 interface CheckoutService <<Facade Interface>> {
@@ -56,7 +59,7 @@ CheckoutServiceImpl ..> PaymentStrategy : "gets from factory"
 CheckoutController ..> CheckoutService : "calls checkout()"
 
 ' --- Notes ---
-note bottom of CheckoutServiceImpl
+note right of CheckoutServiceImpl
   **Facade Pattern**
   Gộp toàn bộ workflow phức tạp vào 1 hàm
   checkout() duy nhất:
