@@ -28,12 +28,13 @@ Tài liệu này cung cấp đầy đủ thông tin về lý thuyết, cách tri
 *   **Lý thuyết & Lý do chọn:** Cung cấp một giao diện hợp nhất cho một tập hợp các giao diện trong một subsystem. Chọn Facade để Controller chỉ cần gọi một hàm `checkout()` thay vì phải tự tay điều phối hàng loạt Service (Voucher, Kho, Thanh toán...).
 *   **Triển khai thực tế:** `CheckoutServiceImpl` là lớp Facade kết nối nhiều subsystem.
 *   **Luồng thực thi chi tiết (Dò trong `CheckoutServiceImpl.java`):**
-    1.  **Dòng 49:** Gọi `validateCheckoutRequest()` check dữ liệu thô.
-    2.  **Dòng 73-108:** Duyệt danh sách SP, gọi `em.find(Product.class)` check tồn kho.
-    3.  **Dòng 115:** Gọi `voucherService.validateVoucher()` để tính toán giảm giá.
-    4.  **Dòng 132-133:** Gọi cụm `PaymentFactory` & `Strategy` để xử lý tiền.
-    5.  **Dòng 140-168:** Tạo thực thể `Order`, `OrderItem`, lưu vào Database qua JPA.
-    6.  **Dòng 188:** Gọi `OrderNotificationService` gửi mail thông báo.
+    1.  **Dòng 49-53:** Gọi `validateCheckoutRequest()` và `validateGuestContactInfo()` để kiểm tra dữ liệu đầu vào.
+    2.  **Dòng 58:** Gọi `DatabaseConfig.getInstance().beginTransaction()` để đảm bảo toàn bộ quy trình là một giao dịch an toàn (Atomic).
+    3.  **Dòng 73-115:** Lần lượt thực hiện các hệ thống con: Kiểm tra tồn kho (Product), áp dụng mã giảm giá (Voucher).
+    4.  **Dòng 132-133:** Phối hợp với `PaymentStrategyFactory` để lấy đúng chiến lược thanh toán và thực hiện lệnh `pay()`.
+    5.  **Dòng 140-168:** Khởi tạo `Order`, gắn `OrderItem` và trừ tồn kho trực tiếp trong Database.
+    6.  **Dòng 181:** Gọi `commitTransaction()` để xác nhận lưu mọi thay đổi. Nếu có bất kỳ lỗi nào ở các bước trên, hệ thống sẽ gọi `rollbackTransaction()`.
+    7.  **Dòng 188:** Chỉ sau khi DB commit thành công, Facade mới gọi `OrderNotificationService` để gửi mail thông báo.
 
 ### 4. Observer Pattern (Thông báo Thay đổi Đơn hàng)
 *   **Lý thuyết & Lý do chọn:** Định nghĩa sự phụ thuộc 1-nhiều. Khi Subject (Order) thay đổi, các Observer (MailService) sẽ nhận được thông báo. Giúp tách rời logic nghiệp vụ chính khỏi logic thông báo phụ trợ.
