@@ -57,11 +57,16 @@ OrderObserver ..> Order : "handles"
 
 ' --- Data Entities (Abbreviated) ---
 class Order {
-    - id : Long
-    - orderCode : String
-    - status : OrderStatus
-    - totalAmount : BigDecimal
-    - ...
+- Long orderID
+- String orderCode
+- String email
+- String recipientName
+- String phoneNumber
+- String address
+- OrderStatus status
+- BigDecimal totalAmount
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
 }
 
 ' --- Notes ---

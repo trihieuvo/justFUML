@@ -35,13 +35,18 @@ LoginStrategy <|.. GoogleLoginStrategy
 AuthServiceImpl o-> "1..*" LoginStrategy : "uses >"
 LoginStrategy ..> User : "<<returns>>"
 
-' --- Data Entities (Abbreviated) ---
+' --- Data Entities ---
 class User {
-    - id : Long
-    - username : String
-    - email : String
-    - role : UserRole
-    - ...
+- Long userID
+- String username
+- String fullName
+- String email
+- String passwordHash
+- String phoneNumber
+- UserRole role
+- UserStatus status
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
 }
 
 ' --- Notes ---

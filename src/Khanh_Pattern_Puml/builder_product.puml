@@ -3,17 +3,15 @@ skinparam ClassAttributeIconSize 0
 
 ' --- Product (Sản phẩm phức tạp) ---
 class Product {
-    - id : Long
-    - name : String
-    - description : String
-    - price : BigDecimal
-    - thumbnailUrl : String
-    - specifications : String
-    - status : Boolean
-    - category : Category
-    - brand : Brand
-    - ...
-    --
+- Long productID
+- String name
+- String description
+- BigDecimal price
+- String thumbnailUrl
+- String specifications
+- Boolean status
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
 }
 
 ' --- Builder Interface ---
@@ -36,11 +34,22 @@ class DefaultProductBuilder <<ConcreteBuilder>> {
     + DefaultProductBuilder()
     + DefaultProductBuilder(product : Product)
     + name(name : String) : ProductBuilder
+    + description(desc : String) : ProductBuilder
+    + price(price : BigDecimal) : ProductBuilder
+    + thumbnailUrl(url : String) : ProductBuilder
+    + specifications(spec : String) : ProductBuilder
+    + status(status : Boolean) : ProductBuilder
+    + category(cat : Category) : ProductBuilder
+    + brand(brand : Brand) : ProductBuilder
     + build() : Product
 }
 
 ' --- Client/Director ---
 class ProductServiceImpl <<Client/Director>> {
+    - productDao : ProductDao
+    - categoryDao : CategoryDao
+    - brandDao : BrandDao
+    --
     + createProduct(request : CreateProductRequest) : Product
     + updateProduct(id : Long, request : CreateProductRequest) : Product
 }

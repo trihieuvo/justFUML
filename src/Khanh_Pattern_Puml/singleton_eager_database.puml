@@ -2,7 +2,11 @@
 skinparam ClassAttributeIconSize 0
 
 class DatabaseConfig <<Singleton>> {
+    - {static} logger : Logger
+    - {static} PERSISTENCE_UNIT_NAME : String
     - {static} uniqueInstance : DatabaseConfig
+    - entityManagerFactory : EntityManagerFactory
+    - entityManagerThreadLocal : ThreadLocal<EntityManager>
     --
     - DatabaseConfig()
     + {static} getInstance() : DatabaseConfig

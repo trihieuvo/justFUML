@@ -12,12 +12,14 @@ abstract class AuthHandler <<Handler>> {
 
 ' --- Concrete Handlers ---
 class TokenValidationHandler <<ConcreteHandler>> {
+    - {static} logger : Logger
     - jwtUtil : JwtUtil
     - redisService : RedisService
     + handle(request, response, chain)
 }
 
 class AdminRoleHandler <<ConcreteHandler>> {
+    - {static} logger : Logger
     + handle(request, response, chain)
 }
 
@@ -44,7 +46,7 @@ AuthHandler <|-- AdminRoleHandler
 AuthHandler <|-- PermitAllHandler
 AuthHandler <|-- AuthenticationCheckHandler
 
-JwtAuthenticationFilter *--> "1" AuthHandler : "headHandler"
+JwtAuthenticationFilter o--> "1" AuthHandler : "headHandler"
 
 ' --- Notes ---
 note bottom of JwtAuthenticationFilter

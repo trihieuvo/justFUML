@@ -6,8 +6,9 @@ class GoogleProfile <<Adaptee>> {
     - googleId : String
     - email : String
     - name : String
+    - givenName : String
+    - familyName : String
     - pictureUrl : String
-    - ...
     --
     + getEmail() : String
     + getName() : String
@@ -29,8 +30,9 @@ class GoogleToUserAdapter <<Adapter>> {
 
 ' --- Client (Người sử dụng) ---
 class GoogleLoginStrategy <<Client>> {
-    + authenticate(request : AuthRequest) : User
+    - userDAO : UserDAO
     --
+    + authenticate(request : AuthRequest) : User
     - processGoogleLogin()
 }
 

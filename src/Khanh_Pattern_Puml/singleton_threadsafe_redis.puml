@@ -2,6 +2,7 @@
 skinparam ClassAttributeIconSize 0
 
 class RedisConfig <<Singleton>> {
+    - {static} logger : Logger
     - {static} volatile instance : RedisConfig
     - jedisPool : JedisPool
     - isRedisAvailable : boolean

@@ -32,10 +32,9 @@ class PendingState <<ConcreteState>> {
 
 class ProcessingState <<ConcreteState>> {
     + shipOrder(context : OrderContext)
-    + cancelOrder(context : OrderContext, reason : String)
 }
 
-class ShippedState <<ConcreteState>> {
+class ShippingState <<ConcreteState>> {
     + deliverOrder(context : OrderContext)
     + cancelOrder(context : OrderContext, reason : String)
 }
@@ -51,24 +50,30 @@ OrderContext o--> "1" OrderState : "current_state"
 OrderContext o--> "1" Order : "holds"
 OrderState <|.. PendingState : "implements"
 OrderState <|.. ProcessingState : "implements"
-OrderState <|.. ShippedState : "implements"
+OrderState <|.. ShippingState : "implements"
 OrderState <|.. DeliveredState : "implements"
 OrderState <|.. CancelledState : "implements"
 
 ' --- Data Entities (Abbreviated) ---
 class Order {
-    - id : Long
-    - orderCode : String
-    - status : OrderStatus
-    - totalAmount : BigDecimal
-    - ...
+- Long orderID
+- String orderCode
+- String email
+- String recipientName
+- String phoneNumber
+- String address
+- OrderStatus status
+- BigDecimal totalAmount
+- LocalDateTime createdAt
+- LocalDateTime updatedAt
 }
 
 ' --- State Transitions (Optional hints) ---
 PendingState ..> ProcessingState : "<<creates>>"
-ProcessingState ..> ShippedState : "<<creates>>"
-ShippedState ..> DeliveredState : "<<creates>>"
+ProcessingState ..> ShippingState : "<<creates>>"
+ShippingState ..> DeliveredState : "<<creates>>"
 PendingState ..> CancelledState : "<<creates>>"
+ShippingState ..> CancelledState : "<<creates>>"
 
 ' --- Notes ---
 note left of OrderContext::state
