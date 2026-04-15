@@ -1,5 +1,8 @@
 @startuml
 skinparam ClassAttributeIconSize 0
+left to right direction
+skinparam ranksep 50
+skinparam nodesep 30
 
 ' --- Observer Interface ---
 interface OrderNotificationService <<Observer>> {
@@ -54,7 +57,7 @@ CheckoutServiceImpl o--> "1" OrderNotificationService : "notifies"
 OrderNotificationService ..> Order : "handles"
 ThymeleafConfig ..> Order : "templates with"
 
-note bottom of OrderNotificationServiceImpl
+note top of OrderNotificationServiceImpl
   **Observer cụ thể:** Render template HTML bằng Thymeleaf,
   sau đó gửi email qua EmailService.
   Tách biệt hoàn toàn khỏi logic database.
@@ -63,12 +66,11 @@ note bottom of OrderNotificationServiceImpl
   Bao gồm việc tính discount từ voucher.
 end note
 
-note right of CheckoutServiceImpl
+note top of CheckoutServiceImpl
   **Khi checkout thành công:**
   orderNotificationService
   .notifyProcessing(order)
-  → Gửi email xác nhận ngay
-  (trừ SEPAY_QR sẽ gửi sau).
+  → Gửi email xác nhận ngay.
 end note
 
 note bottom of OrderNotificationServiceImpl

@@ -40,7 +40,7 @@ rder order);
 public class OrderNotificationServiceImpl implements OrderNotificationService {
     private final EmailService emailService;
     
-    @Override
+    @Override![img.png](img.png)
     public void notifyProcessing(Order order) {
         try {
             Context context = new Context();
@@ -195,14 +195,14 @@ public class SePayStrategy implements PaymentStrategy {
 *"Factory Pattern cung cấp giao diện tạo object mà không cần chỉ rõ class cụ thể sẽ được tạo."
 
 **Vấn đề:**
-*"Nếu CheckoutServiceImpl tự tạo strategy bằng `new CODStrategy()`, nó sẽ bị phụ thuộc vào concrete class. Khi thay đổi cách tạo (VD: thêm caching), phải sửa code nhiều nơi."
+*"Nếu CheckoutServiceImpl tự tạo strategy bằng `new CODStrategy()`, nó sẽ bị phụ thuộc vào con2crete class. Khi thay đổi cách tạo (VD: thêm caching), phải sửa code nhiều nơi."
 
 **Giải pháp:**
 *"Em tạo một `PaymentStrategyFactory` tập trung logic tạo:*"
 
 **Show code Factory** (bên cạnh diagram):
 ```java
-// PaymentStrategyFactory.java
+// 2.java
 public final class PaymentStrategyFactory {
     private static final Map<String, Supplier<PaymentStrategy>> STRATEGIES = Map.of(
         "COD", CODStrategy::new,
