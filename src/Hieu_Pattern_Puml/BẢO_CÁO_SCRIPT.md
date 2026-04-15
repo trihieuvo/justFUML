@@ -329,12 +329,6 @@ if (!"SEPAY_QR".equalsIgnoreCase(request.getPaymentMethod())) {
 
 ---
 
-### 📱 Quick Mention: State Pattern (bonus)
-
-**Câu dẫn:**
-"Ngoài ra trong module Order, em còn sử dụng State Pattern để quản lý trạng thái đơn hàng (PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED). Mỗi state có thể chuyển đổi sang state khác, đảm bảo không thể cancel order đã delivered. Vì không nằm trong 2 usecase chính, em xin phép không đi sâu nếu không có yêu cầu."
-
----
 
 ## 3. MODULE ĐĂNG KÝ & XÁC THỰC <a id="3"></a>
 
@@ -476,38 +470,7 @@ public Optional<User> findByEmail(String email) {
 
 ---
 
-#### 3.3 STRATEGY PATTERN - Đa dạng phương thức đăng nhập (Bonus)
 
-**Câu dẫn:**
-"Bonus: Em cũng áp dụng Strategy Pattern cho phương thức đăng nhập, hiện tại có 2 strategy: Local Login và Google OAuth"
-
-**Show code ngắn:**
-```java
-// LoginStrategy.java
-public interface LoginStrategy {
-    User authenticate(AuthRequest request) throws RuntimeException;
-}
-
-// LocalLoginStrategy.java
-public class LocalLoginStrategy implements LoginStrategy {
-    @Override
-    public User authenticate(AuthRequest request) {
-        return userDAO.findByUsernameOrEmail(request.getUsername())
-            .filter(user -> passwordEncoder.matches(request.getPassword(), user.getPasswordHash()))
-            .orElseThrow(() -> new BadCredentialsException("Sai tài khoản/mật khẩu"));
-    }
-}
-
-// GoogleLoginStrategy.java
-public class GoogleLoginStrategy implements LoginStrategy {
-    @Override
-    public User authenticate(AuthRequest request) {
-        GoogleProfile profile = verifyGoogleToken(request.getToken());
-        return userDAO.findByGoogleId(profile.getId())
-            .orElseGet(() -> createNewUserFromGoogle(profile));
-    }
-}
-```
 
 **Nhấn mạnh:** "Có thể thêm Facebook, GitHub login một cách dễ dàng"
 
