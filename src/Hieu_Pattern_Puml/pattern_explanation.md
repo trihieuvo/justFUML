@@ -44,16 +44,6 @@ Tài liệu này cung cấp đầy đủ thông tin về lý thuyết, cách tri
     3.  **Dòng 34:** Gọi `ThymeleafConfig` render file template `.html` thành chuỗi String nội dung Email.
     4.  **Dòng 37:** Gọi `emailService.sendHtmlEmail()` để gửi đi thực tế.
 
-### 5. State Pattern (Vòng đời đơn hàng)
-*   **Lý thuyết & Lý do chọn:** Cho phép đối tượng thay đổi hành vi khi trạng thái nội bộ thay đổi. Chọn State thay vì if-else status để kiểm soát các bước chuyển trạng thái (StateMachine) một cách an toàn và tường minh.
-*   **Triển khai thực tế:** `OrderContext` chứa `OrderState`. Các lớp `PendingState`, `ProcessingState`, `ShippedState`... thực hiện logic.
-*   **Luồng thực thi chi tiết (Dò trong `OrderContext.java` & `PendingState.java`):**
-    1.  **Tại `OrderContext.java` (Line 46-64):** Constructor tự tạo State tương ứng với status hiện tại.
-    2.  **Dòng 94:** Admin gọi `context.processOrder()`. Hàm này ủy quyền: `state.processOrder(this)`.
-    3.  **Tại `PendingState.java`:**
-        *   Cập nhật `order.setStatus(OrderStatus.PROCESSING)`.
-        *   Gọi `context.setState(new ProcessingState())` để đổi "lớp" xử lý.
-        *   Gửi email báo khách thông qua `context.getNotificationService()`.
 
 ---
 
@@ -68,31 +58,7 @@ Tài liệu này cung cấp đầy đủ thông tin về lý thuyết, cách tri
     3.  **Dòng 49-52:** Sinh OTP và lưu vào Redis.
     4.  **Dòng 57:** Gọi `emailService.sendOtp()` gửi mã qua Email.
 
-### 2. Strategy Pattern (Đa phương thức Login)
-*   **Lý thuyết & Lý do chọn:** Cho phép thay đổi linh hoạt giữa đăng nhập truyền thống và OAuth2 (Google). Giúp hệ thống dễ dàng tích hợp thêm Facebook/Github login sau này.
-*   **Triển khai thực tế:** Interface `LoginStrategy` với 2 bản mẫu: `LocalLoginStrategy` và `GoogleLoginStrategy`.
-*   **Luồng thực thi chi tiết:**
-    1.  User chọn phương thức Login -> `AuthServiceImpl` lấy đúng Strategy từ Map.
-    2.  `LocalLoginStrategy`: Query SQL tìm user -> `BCrypt.checkpw()` so khớp.
-    3.  `GoogleLoginStrategy`: Xác thực Token từ Google API -> Trả về User.
-
-### 3. Adapter Pattern (Google OAuth)
-*   **Lý thuyết & Lý do chọn:** Chuyển đổi giao diện của một lớp thành giao diện khác mà client mong muốn. Chọn Adapter để biến dữ liệu thô từ Google API thành đối tượng `User` mà hệ thống có thể hiểu được.
-*   **Triển khai thực tế:** `GoogleToUserAdapter` bọc `GoogleProfile`.
-*   **Luồng thực thi chi tiết (Dò trong `GoogleToUserAdapter.java`):**
-    1.  **Dòng 24:** Nhận đối tượng `GoogleProfile` (Adaptee).
-    2.  **Dòng 27 (Hàm `adaptToUser`):** Trích xuất `email`, `name` từ Profile gán vào thực thể `User` mới.
-    3.  Trả về `User` chuẩn cho tầng Service xử lý.
-
-### 4. Singleton Pattern (Quản lý tài nguyên)
-*   **Lý thuyết & Lý do chọn:** Đảm bảo chỉ có một instance duy nhất. Chọn Singleton cho các kết nối Database/Redis để quản lý Connection Pool hiệu quả, tránh lãng phí tài nguyên.
-*   **Triển khai thực tế:** `DatabaseConfig` (Eager), `RedisConfig` (Double-Checked Locking).
-*   **Luồng thực thi chi tiết (Dò trong `UserDAOImpl.java`):**
-    1.  **Dòng 20:** Gọi `UserDAOImpl.getInstance()`.
-    2.  Kiểm tra nếu `instance` null thì mới khởi tạo trong khối `synchronized`.
-    3.  Trả về instance duy nhất cho mọi yêu cầu truy xuất dữ liệu.
-
-### 5. DAO Pattern (Data Access Object)
+### 2. DAO Pattern (Data Access Object)
 *   **Lý thuyết & Lý do chọn:** Tách biệt logic persistence khỏi business logic. Giúp lớp Service không bị phụ thuộc vào câu lệnh SQL/JPQL cụ thể, dễ dàng thay đổi công nghệ Database khi cần.
 *   **Triển khai thực tế:** Interface `UserDAO` và lớp `UserDAOImpl` dùng JPA.
 *   **Luồng thực thi chi tiết (Dò trong `UserDAOImpl.java`):**
