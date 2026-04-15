@@ -7,40 +7,40 @@ top to bottom direction
 ' --- Abstract Class ---
 abstract class OrderCommand <<Command>> {
     # facade : OrderFacade
-    # templateEngine : IEngine
-    # application : App
-    + init(facade, templateEngine, app)
-    + {abstract} execute(req, resp)
-    # render(req, resp, template, context)
-    # createWebContext(req, resp)
+    # templateEngine : ITemplateEngine
+    # application : JakartaServletWebApplication
+    + init(facade: OrderFacade, templateEngine: ITemplateEngine, application: JakartaServletWebApplication) : void
+    + {abstract} execute(req: HttpServletRequest, resp: HttpServletResponse) : void
+    # render(req: HttpServletRequest, resp: HttpServletResponse, template: String, context: WebContext) : void
+    # createWebContext(req: HttpServletRequest, resp: HttpServletResponse) : WebContext
 }
 
 ' --- Interfaces ---
 interface OrderFacade <<Facade>> {
-    + getOrdersByOrderCodes(codes: List)
-    + getOrderByOrderCode(code: String)
+    + getOrdersByOrderCodes(orderCodes: List<String>) : List<Order>
+    + getOrderByOrderCode(orderCode: String) : Order
 }
 
 ' --- Concrete Commands ---
 class TrackOrderCommand <<ConcreteCommand>> {
-    + execute(req, resp)
+    + execute(req: HttpServletRequest, resp: HttpServletResponse) : void
 }
 
 ' --- Factory ---
 class OrderCommandFactory <<Factory>> {
-    - {static} commands : Map
-    + {static} getCommand(method, path)
+    - {static} commands : Map<String, OrderCommand>
+    + {static} getCommand(method: String, path: String) : OrderCommand
 }
 
 ' --- Client / Controller ---
 class OrderTrackingController <<Invoker>> {
     - orderFacade : OrderFacade
-    - templateEngine : IEngine
-    - application : App
-    + init()
-    # doGet(req, resp)
-    # doPost(req, resp)
-    - processRequest(req, resp)
+    - templateEngine : ITemplateEngine
+    - application : JakartaServletWebApplication
+    + init() : void
+    # doGet(req: HttpServletRequest, resp: HttpServletResponse) : void
+    # doPost(req: HttpServletRequest, resp: HttpServletResponse) : void
+    - processRequest(req: HttpServletRequest, resp: HttpServletResponse) : void
 }
 
 ' --- Subsystems ---
@@ -65,7 +65,7 @@ end note
 note bottom of OrderCommandFactory
   **Factory Method**
   Sử dụng Map để phân bổ luồng
-  (GET/POST) thành đối tượng Command.
+  thành đối tượng Command.
 end note
 
 note bottom of OrderCommand

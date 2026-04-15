@@ -7,53 +7,60 @@ top to bottom direction
 ' --- Abstract Class ---
 abstract class ProfileCommand <<Command>> {
     # facade : UserProfileFacade
-    # templateEngine : IEngine
-    # application : App
-    + init(facade, templateEngine, app)
-    + {abstract} execute(req, resp, userId)
-    # render(req, resp, template, context)
-    # createWebContext(req, resp)
+    # templateEngine : ITemplateEngine
+    # application : JakartaServletWebApplication
+    + init(facade: UserProfileFacade, templateEngine: ITemplateEngine, application: JakartaServletWebApplication) : void
+    + {abstract} execute(req: HttpServletRequest, resp: HttpServletResponse, userId: Long) : void
+    # render(req: HttpServletRequest, resp: HttpServletResponse, template: String, context: WebContext) : void
+    # createWebContext(req: HttpServletRequest, resp: HttpServletResponse) : WebContext
 }
 
 ' --- Interface ---
 interface UserProfileFacade <<Facade>> {
-    + getUserAddresses(userId)
-    + addAddress(userId, address)
-    + updateAddress(userId, address)
-    + deleteAddress(addressId)
-    + setDefaultAddress(userId, addressId)
-    + extractAddressFromRequest(req)
+    + getUserDetails(userId: Long) : User
+    + updateProfile(userId: Long, fullName: String, phoneNumber: String) : void
+    + updateAvatar(userId: Long, avatarPart: Part) : void
+    + changePassword(userId: Long, currentPassword: String, newPassword: String, confirmNewPassword: String) : void
+    + getUserAddresses(userId: Long) : List<Address>
+    + addAddress(userId: Long, address: Address) : void
+    + updateAddress(userId: Long, address: Address) : void
+    + deleteAddress(addressId: Long) : void
+    + setDefaultAddress(userId: Long, addressId: Long) : void
+    + getUserOrders(userId: Long) : List<Order>
+    + cancelUserOrder(userId: Long, orderId: Long) : void
+    + extractAddressFromRequest(req: HttpServletRequest) : Address
 }
 
 ' --- Concrete Commands ---
 class EditAddressCommand <<ConcreteCommand>> {
-    + execute(req, resp, userId)
+    + execute(req: HttpServletRequest, resp: HttpServletResponse, userId: Long) : void
 }
 class AddAddressCommand <<ConcreteCommand>> {
-    + execute(req, resp, userId)
+    + execute(req: HttpServletRequest, resp: HttpServletResponse, userId: Long) : void
 }
 class DeleteAddressCommand <<ConcreteCommand>> {
-    + execute(req, resp, userId)
+    + execute(req: HttpServletRequest, resp: HttpServletResponse, userId: Long) : void
 }
 class SetDefaultAddressCommand <<ConcreteCommand>> {
-    + execute(req, resp, userId)
+    + execute(req: HttpServletRequest, resp: HttpServletResponse, userId: Long) : void
 }
 
 ' --- Factory ---
 class ProfileCommandFactory <<Factory>> {
-    - {static} commands : Map
-    + {static} getCommand(method, path)
+    - {static} getCommands : Map<String, ProfileCommand>
+    - {static} postCommands : Map<String, ProfileCommand>
+    + {static} getCommand(method: String, path: String) : ProfileCommand
 }
 
 ' --- Client / Controller ---
 class UserProfileController <<Invoker>> {
     - profileFacade : UserProfileFacade
-    - templateEngine : IEngine
-    - application : App
-    + init()
-    # doGet(req, resp)
-    # doPost(req, resp)
-    - processRequest(req, resp)
+    - templateEngine : ITemplateEngine
+    - application : JakartaServletWebApplication
+    + init() : void
+    # doGet(req: HttpServletRequest, resp: HttpServletResponse) : void
+    # doPost(req: HttpServletRequest, resp: HttpServletResponse) : void
+    - processRequest(req: HttpServletRequest, resp: HttpServletResponse) : void
 }
 
 ' --- Subsystems ---
