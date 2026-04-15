@@ -44,13 +44,13 @@ class CheckoutServiceImpl <<Context>> {
 
 ' --- Result ---
 class PaymentResult <<record>> {
-    - success : boolean
-    - message : String
-    - transactionId : String
-    --
-    + {static} success(message : String) : PaymentResult
-    + {static} success(message, transactionId) : PaymentResult
-    + {static} failure(message : String) : PaymentResult
+  - success : boolean
+  - message : String
+  - transactionId : String
+  --
+  + {static} success(message : String) : PaymentResult
+  + {static} success(message : String, transactionId : String) : PaymentResult
+  + {static} failure(message : String) : PaymentResult
 }
 
 ' --- Relationships ---
@@ -78,9 +78,8 @@ note bottom of CODStrategy
 end note
 
 note bottom of SePayStrategy
-  Trả PaymentResult pending,
-  yêu cầu khách quét QR để 
-  hoàn tất thanh toán.
+  Trả PaymentResult với message yêu cầu quét QR,
+  khác với các strategy khác nhưng vẫn là success.
 end note
 
 @enduml

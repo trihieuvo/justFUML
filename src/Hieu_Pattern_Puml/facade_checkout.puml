@@ -24,12 +24,17 @@ class VoucherService <<Subsystem>> {
 }
 
 class UserDAO <<Subsystem>> {
-    + findByEmail(email : String) : Optional<User>
-    + findByPhoneNumber(phone : String) : Optional<User>
+  + findByEmail(email : String) : Optional<User>
+  + findByPhoneNumber(phone : String) : Optional<User>
+}
+
+class PaymentStrategy <<Subsystem>> {
+  + pay(amount : BigDecimal) : PaymentResult
+  + getStrategyCode() : String
 }
 
 class PaymentStrategyFactory <<Subsystem>> {
-    + {static} fromCode(code : String) : PaymentStrategy
+  + {static} fromCode(code : String) : PaymentStrategy
 }
 
 class OrderNotificationService <<Subsystem>> {
@@ -47,6 +52,7 @@ CheckoutServiceImpl --> VoucherService : "validates voucher"
 CheckoutServiceImpl --> UserDAO : "checks user"
 CheckoutServiceImpl --> PaymentStrategyFactory : "creates strategy"
 CheckoutServiceImpl --> OrderNotificationService : "sends notification"
+CheckoutServiceImpl ..> PaymentStrategy : "gets from factory"
 CheckoutController ..> CheckoutService : "calls checkout()"
 
 ' --- Notes ---
@@ -59,7 +65,8 @@ note bottom of CheckoutServiceImpl
   3. Áp voucher giảm giá
   4. Xử lý thanh toán (Strategy)
   5. Tạo Order + OrderItem + trừ kho
-  6. Gửi email thông báo (Observer)
+  6. Database Transaction (commit/rollback)
+  7. Gửi email thông báo (Observer)
 end note
 
 note top of CheckoutController

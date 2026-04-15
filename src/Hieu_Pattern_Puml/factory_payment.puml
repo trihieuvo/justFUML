@@ -55,13 +55,17 @@ PaymentStrategy <|.. StorePickupStrategy
 PaymentStrategy <|.. SePayStrategy
 PaymentStrategyFactory ..> PaymentStrategy : "<<creates>>"
 CheckoutServiceImpl ..> PaymentStrategyFactory : "uses"
+CheckoutServiceImpl ..> PaymentStrategy : "gets from factory"
 
 ' --- Notes ---
 note right of PaymentStrategyFactory
   **Simple Factory (Static Factory)**
   Dùng Map<String, Supplier<PaymentStrategy>>
-  để ánh xạ mã thanh toán ("COD", "MOMO"...) 
+  để ánh xạ mã thanh toán ("COD", "MOMO"...)
   thành đối tượng Strategy tương ứng.
+  
+  Map bao gồm cả alias:
+  - "BANK" và "BANK_TRANSFER" → BankTransferStrategy
   
   Constructor private → Utility class,
   không cho phép tạo instance.

@@ -26,18 +26,23 @@ class UserService <<Subsystem>> {
 }
 
 class RedisService <<Subsystem>> {
-    + canSendOtp(email : String) : boolean
-    + saveRegisterOtp(email, otp : String)
-    + verifyRegisterOtp(email, otp : String) : boolean
-    + setOtpCooldown(email : String)
-    + incrementOtpAttempt(email : String) : int
-    + isOtpBlocked(email : String) : boolean
-    + clearOtpAttempts(email : String)
+  + canSendOtp(email : String) : boolean
+  + saveRegisterOtp(email, otp : String)
+  + verifyRegisterOtp(email, otp : String) : boolean
+  + setOtpCooldown(email : String)
+  + incrementOtpAttempt(email : String) : int
+  + isOtpBlocked(email : String) : boolean
+  + clearOtpAttempts(email : String)
+  + deleteRegisterOtp(email : String)
+  + deleteForgotPasswordOtp(email : String)
+  + saveForgotPasswordOtp(email, otp : String)
+  + verifyForgotPasswordOtp(email, otp : String) : boolean
 }
 
 class EmailService <<Subsystem>> {
-    + generateOTP() : String
-    + sendOtp(email, otp : String) : boolean
+  + generateOTP() : String
+  + sendOtp(email, otp : String) : boolean
+  + sendHtmlEmail(to, subject, html)
 }
 
 ' --- Client ---

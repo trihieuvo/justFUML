@@ -3,41 +3,38 @@ skinparam ClassAttributeIconSize 0
 
 ' --- Observer Interface ---
 interface OrderNotificationService <<Observer>> {
-    + notifyProcessing(order : Order)
-    + notifyShipping(order : Order)
-    + notifyDelivered(order : Order)
-    + notifyCancelled(order : Order, reason : String)
+  + notifyProcessing(order : Order)
+  + notifyShipping(order : Order)
+  + notifyDelivered(order : Order)
+  + notifyCancelled(order : Order, reason : String)
 }
 
 ' --- Concrete Observer ---
 class OrderNotificationServiceImpl <<ConcreteObserver>> {
-    - emailService : EmailService
-    --
-    + OrderNotificationServiceImpl()
-    + notifyProcessing(order : Order)
-    + notifyShipping(order : Order)
-    + notifyDelivered(order : Order)
-    + notifyCancelled(order : Order, reason : String)
+  - emailService : EmailService
+  - thymeleafConfig : ThymeleafConfig
+  --
+  + OrderNotificationServiceImpl()
+  + notifyProcessing(order : Order)
+  + notifyShipping(order : Order)
+  + notifyDelivered(order : Order)
+  + notifyCancelled(order : Order, reason : String)
 }
 
 ' --- Subject (Publisher) ---
-class CheckoutServiceImpl <<Subject / Checkout>> {
-    - orderNotificationService : OrderNotificationService
-    --
-    + checkout(userId : Long, request : CheckoutRequest) : CheckoutResponse
-}
-
-class OrderContext <<Subject / Admin>> {
-    - notificationService : OrderNotificationService
-    --
-    + processOrder()
-    + shipOrder()
-    + cancelOrder(reason : String)
+class CheckoutServiceImpl <<Subject>> {
+  - orderNotificationService : OrderNotificationService
+  --
+  + checkout(userId : Long, request : CheckoutRequest) : CheckoutResponse
 }
 
 ' --- Dependencies ---
 class EmailService <<Helper>> {
-    + sendHtmlEmail(to, subject, html)
+  + sendHtmlEmail(to, subject, html)
+}
+
+class ThymeleafConfig <<Helper>> {
+  + getTemplateEngine() : TemplateEngine
 }
 
 ' --- Data Entity ---
@@ -52,31 +49,32 @@ class Order {
 ' --- Relationships ---
 OrderNotificationService <|.. OrderNotificationServiceImpl : "implements"
 OrderNotificationServiceImpl --> EmailService : "sends via"
+OrderNotificationServiceImpl --> ThymeleafConfig : "renders via"
 CheckoutServiceImpl o--> "1" OrderNotificationService : "notifies"
-OrderContext o--> "1" OrderNotificationService : "notifies"
 OrderNotificationService ..> Order : "handles"
+ThymeleafConfig ..> Order : "templates with"
 
-' --- Notes ---
 note bottom of OrderNotificationServiceImpl
-  **Concrete Observer:**
-  Render template HTML bằng Thymeleaf,
+  **Observer cụ thể:** Render template HTML bằng Thymeleaf,
   sau đó gửi email qua EmailService.
   Tách biệt hoàn toàn khỏi logic database.
+
+  Có try-catch để không ảnh hưởng luồng chính.
+  Bao gồm việc tính discount từ voucher.
 end note
 
 note right of CheckoutServiceImpl
   **Khi checkout thành công:**
   orderNotificationService
-    .notifyProcessing(order)
-  → Gửi email xác nhận ngay 
+  .notifyProcessing(order)
+  → Gửi email xác nhận ngay
   (trừ SEPAY_QR sẽ gửi sau).
 end note
 
-note right of OrderContext
-  **Khi Admin thay đổi trạng thái:**
-  State.processOrder() gọi
-  context.getNotificationService()
-    .notifyProcessing(order)
+note bottom of OrderNotificationServiceImpl
+  **QUAN TRỌNG:** OrderNotificationServiceImpl
+  thuộc Observer Pattern, không liên quan đến
+  OrderContext (thuộc State Pattern).
 end note
 
 @enduml
