@@ -171,7 +171,7 @@ class ReviewLike {
     Order "1" *--> "*" OrderItem : contains
     Product "1" *--> "*" ProductImage : has
     Category "1" *--> "*" Category : parent/children
-    Category "1" *--> "*" Product : contains
+
 
 
     ' === 3. ASSOCIATION (--> hoặc --) Mũi tên thường hoặc đường thẳng: Liên kết tham chiếu ===
@@ -186,6 +186,7 @@ class ReviewLike {
     Brand "1" --> "*" Product : manufactures
     OrderItem "*" --> "1" Product : references
     Review "1" --> "*" ReviewLike : receives
+    Category "1" --> "*" Product : contains
 
 
     ' === 4. DEPENDENCY (..>) Nét đứt: Phụ thuộc Enum ===
