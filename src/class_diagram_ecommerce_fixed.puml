@@ -45,6 +45,7 @@ class User {
 - String phoneNumber
 - UserRole role
 - UserStatus status
+- String avatar
 - LocalDateTime createdAt
 - LocalDateTime updatedAt
 }
@@ -136,6 +137,7 @@ class Order {
 class OrderItem {
 - Long orderItemID
 - Integer quantity
+- BigDecimal price
 - LocalDateTime createdAt
 }
 
