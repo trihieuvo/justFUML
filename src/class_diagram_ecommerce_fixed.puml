@@ -170,7 +170,7 @@ class ReviewLike {
     Cart "1" *--> "*" CartItem : contains
     Order "1" *--> "*" OrderItem : contains
     Product "1" *--> "*" ProductImage : has
-    Category "1" *--> "*" Category : parent/children
+    Category "1" *--> "*" Category
 
 
 
