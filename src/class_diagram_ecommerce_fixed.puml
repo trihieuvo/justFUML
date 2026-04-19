@@ -166,7 +166,7 @@ class ReviewLike {
 }
 
     ' === 1. COMPOSITION (*-->) Hình thoi đặc: Áp dụng cho CascadeType.ALL ===
-    User "1" *--> "*" Review : writes
+
     Cart "1" *--> "*" CartItem : contains
     Order "1" *--> "*" OrderItem : contains
     Product "1" *--> "*" ProductImage : has
@@ -187,7 +187,7 @@ class ReviewLike {
     OrderItem "*" --> "1" Product : references
     Review "1" --> "*" ReviewLike : receives
     Category "1" --> "*" Product : contains
-
+    User "1" --> "*" Review : writes
 
     ' === 4. DEPENDENCY (..>) Nét đứt: Phụ thuộc Enum ===
     User ..> UserRole
