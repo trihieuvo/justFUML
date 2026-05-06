@@ -2,8 +2,8 @@
 left to right direction
 skinparam packageStyle rectangle
 
-actor "Người dùng (User)" as User
-actor "Quản trị viên (Admin)" as Admin
+actor "User" as User
+actor "Admin" as Admin
 
 package "Quản lý Hồ sơ" {
   usecase "Chỉnh sửa hồ sơ (Edit Profile)" as UC_Edit
@@ -12,7 +12,6 @@ package "Quản lý Hồ sơ" {
 User --> UC_Edit
 Admin --> UC_Edit
 
-note "Điều kiện tiên quyết (Pre-condition):\nNgười dùng đã đăng nhập thành công \nvà có JWT Token hợp lệ." as N1
-UC_Edit .. N1
+
 
 @enduml
