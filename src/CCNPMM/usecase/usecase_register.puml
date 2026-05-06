@@ -2,16 +2,13 @@
 left to right direction
 skinparam packageStyle rectangle
 
-actor "Người dùng (User)" as Guest
-actor "Hệ thống Email (Mail Server)" as EmailService
+
 
 package "Authentication & Account" {
-  usecase "Register Account" as UC_Register
-  usecase "Verify OTP" as UC_VerifyOTP
+  usecase "Register" as UC_Register
 }
 
 Guest --> UC_Register
-Guest --> UC_VerifyOTP
-EmailService --> UC_Register
+
 
 @enduml
