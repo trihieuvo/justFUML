@@ -1,0 +1,102 @@
+@startuml
+!theme plain
+autonumber
+
+skinparam maxMessageSize 150
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+
+title Sequence Diagram - Luồng Đăng ký tài khoản
+
+actor "Guest" as Guest
+participant "ReactJS UI" as UI
+participant "AuthRoute" as Route
+participant "RateLimitMiddleware" as RateLimit
+participant "ValidationMiddleware" as Validation
+participant "AuthController" as Controller
+participant "AuthService" as Service
+participant "OtpService" as OTP
+participant "MailService" as Mail
+participant "UserModel\n(Mongoose)" as UserModel
+database "MongoDB\nDatabase" as DB
+
+Guest -> UI : Truy cập trang đăng ký\nNhập họ tên, email, MSSV, mật khẩu
+activate UI
+
+UI -> Route : POST /api/auth/register
+activate Route
+
+Route -> RateLimit : Kiểm tra số lần request theo IP
+activate RateLimit
+RateLimit --> Route : Kết quả kiểm tra
+deactivate RateLimit
+
+alt Vượt quá số lần request
+    Route --> UI : HTTP 429 Too Many Requests
+    UI --> Guest : Hiển thị lỗi\n"Bạn thao tác quá nhanh"
+else Chưa vượt giới hạn
+    Route -> Validation : Validate dữ liệu đăng ký
+    activate Validation
+    Validation --> Route : Kết quả validation
+    deactivate Validation
+
+    alt Dữ liệu không hợp lệ
+        Route --> UI : HTTP 400 Bad Request\nDanh sách lỗi validation
+        UI --> Guest : Hiển thị lỗi trên form
+    else Dữ liệu hợp lệ
+        Route -> Controller : register(req, res)
+        activate Controller
+
+        Controller -> Service : register(registerData)
+        activate Service
+
+        Service -> UserModel : findOne({ email or studentId })
+        activate UserModel
+        UserModel -> DB : FIND user by email/studentId
+        activate DB
+        DB --> UserModel : User tồn tại hoặc null
+        deactivate DB
+        UserModel --> Service : Kết quả kiểm tra
+        deactivate UserModel
+
+        alt Email hoặc MSSV đã tồn tại
+            Service --> Controller : Throw Error\n"Email hoặc MSSV đã được sử dụng"
+            Controller --> UI : HTTP 409 Conflict
+            UI --> Guest : Hiển thị lỗi trùng tài khoản
+        else Tài khoản chưa tồn tại
+            Service -> Service : Hash password bằng bcrypt
+
+            Service -> OTP : generateOtp()
+            activate OTP
+            OTP --> Service : OTP 6 chữ số
+            deactivate OTP
+
+            Service -> UserModel : create user\nisVerified = false\notp, otpExpires
+            activate UserModel
+            UserModel -> DB : INSERT user
+            activate DB
+            DB --> UserModel : Lưu thành công
+            deactivate DB
+            UserModel --> Service : User đã tạo
+            deactivate UserModel
+
+            Service -> Mail : sendActivationEmail(email, otp)
+            activate Mail
+            Mail --> Service : Gửi email thành công
+            deactivate Mail
+
+            Service --> Controller : Register thành công
+            deactivate Service
+
+            Controller --> UI : HTTP 201 Created\nYêu cầu kiểm tra email
+            deactivate Controller
+
+            UI --> Guest : Chuyển sang trang nhập OTP
+        end
+    end
+end
+
+deactivate Route
+deactivate UI
+
+@enduml
