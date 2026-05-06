@@ -17,7 +17,7 @@ justFUML/
 ├── .idea/                  # Cấu hình IDE (IntelliJ)
 ├── src/                    # Thư mục mã nguồn và tài liệu mô hình hóa
 │   ├── reference/          # Các tệp tham chiếu chứa mã nguồn Java thực thể
-│   │   └── package.txt     # Tổng hợp toàn bộ code Java entity (Address, Brand, Order, v.v.)
+│   │   └── package.txt    [sequence](src/CCNPMM/sequence) # Tổng hợp toàn bộ code Java entity (Address, Brand, Order, v.v.)
 │   ├── class_diagram.puml  # Sơ đồ lớp (Class Diagram) chi tiết của hệ thống
 │   └── use_case_diagam.puml # Sơ đồ Ca sử dụng (Use Case Diagram) của hệ thống
 ├── .gitignore              # Các tệp bị loại bỏ khỏi quản lý phiên bản
