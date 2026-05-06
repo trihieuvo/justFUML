@@ -1,39 +1,17 @@
 @startuml
-!theme plain
-skinparam actorStyle awesome
 left to right direction
 skinparam packageStyle rectangle
 
-title Use Case Diagram - Register Feature
+actor "Người dùng (User)" as Guest
+actor "Hệ thống Email (Mail Server)" as EmailService
 
-actor "Guest" as Guest
-actor "Email Service" as EmailService
-
-package "Register Feature" {
-    usecase "Register Account" as UC_Register
-    usecase "Enter Registration Information" as UC_Input
-    usecase "Validate Input Data" as UC_Validation
-    usecase "Apply Rate Limiting" as UC_RateLimit
-    usecase "Check Duplicate Email/Student ID" as UC_CheckDuplicate
-    usecase "Hash Password" as UC_HashPassword
-    usecase "Generate Activation OTP" as UC_GenerateOTP
-    usecase "Send OTP Email" as UC_SendOTP
-    usecase "Verify Activation OTP" as UC_VerifyOTP
+package "Authentication & Account" {
+  usecase "Register Account" as UC_Register
+  usecase "Verify OTP" as UC_VerifyOTP
 }
 
 Guest --> UC_Register
 Guest --> UC_VerifyOTP
-
-EmailService --> UC_SendOTP
-
-UC_Register ..> UC_Input : <<include>>
-UC_Register ..> UC_RateLimit : <<include>>
-UC_Register ..> UC_Validation : <<include>>
-UC_Register ..> UC_CheckDuplicate : <<include>>
-UC_Register ..> UC_HashPassword : <<include>>
-UC_Register ..> UC_GenerateOTP : <<include>>
-UC_Register ..> UC_SendOTP : <<include>>
-
-UC_VerifyOTP ..> UC_Validation : <<include>>
+EmailService --> UC_Register
 
 @enduml
