@@ -1,0 +1,32 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam linetype polyline
+actor "Khách (Guest)" as Guest
+actor "Người dùng (User)" as User
+actor "Quản trị viên (Admin)" as Admin
+
+package "Xác thực & Tài khoản" {
+  usecase "Đăng ký (Register)" as UC_Register
+  usecase "Đăng nhập (Login)" as UC_Login
+  usecase "Quên mật khẩu (Forgot Password)" as UC_Forgot
+}
+
+package "Quản lý Hồ sơ" {
+  usecase "Chỉnh sửa hồ sơ (Edit Profile)" as UC_EditProfile
+}
+
+' Phân quyền cho Guest
+Guest --> UC_Register
+
+' Phân quyền cho User
+User --> UC_Login
+User --> UC_Forgot
+User --> UC_EditProfile
+
+' Phân quyền cho Admin
+Admin --> UC_Login
+Admin --> UC_Forgot
+Admin --> UC_EditProfile
+
+@enduml
