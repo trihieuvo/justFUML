@@ -1,0 +1,71 @@
+@startuml
+skinparam maxMessageSize 150
+skinparam responseMessageBelowArrow true
+
+actor Client as "Client"
+participant RateLimiter as "Rate Limiting\n(Express Middleware)"
+participant Validator as "Validation\n(Express Middleware)"
+participant Controller as "Auth Controller\n(NodeJS / ExpressJS)"
+participant Service as "Auth Service\n(NodeJS Business Logic)"
+database Database as "MongoDB"
+
+== Chức năng Đăng nhập (Login) ==
+
+Client -> RateLimiter: 1. POST /api/auth/login\n{email, password}
+activate RateLimiter
+
+alt Vượt quá giới hạn (Chống Brute-force)
+    RateLimiter --> Client: 429 Too Many Requests\n(Thử lại sau)
+else Không vượt giới hạn
+    RateLimiter -> Validator: 2. next()
+    deactivate RateLimiter
+    activate Validator
+    
+    alt Dữ liệu thiếu/không hợp lệ
+        Validator --> Client: 400 Bad Request\n(Chi tiết lỗi validation)
+    else Dữ liệu hợp lệ
+        Validator -> Controller: 3. next()
+        deactivate Validator
+        activate Controller
+        
+        Controller -> Service: 4. login(email, password)
+        activate Service
+        
+        Service -> Database: 5. User.findOne({ email })
+        activate Database
+        Database --> Service: 6. Trả về Mongoose Document\n(Bao gồm Hashed Pass, Role, Status)
+        deactivate Database
+        
+        alt User không tồn tại
+            Service --> Controller: throw Error("Tài khoản không tồn tại")
+            Controller --> Client: 404 Not Found
+        else User tồn tại
+            alt Trạng thái 'inactive' (Chưa kích hoạt OTP)
+                Service --> Controller: throw Error("Tài khoản chưa được kích hoạt")
+                Controller --> Client: 403 Forbidden\n(Yêu cầu xác thực OTP)
+            else Trạng thái 'active'
+                Service -> Service: 7. bcrypt.compare(password, user.password)
+                
+                alt Mật khẩu sai
+                    Service --> Controller: throw Error("Sai mật khẩu")
+                    Controller --> Client: 401 Unauthorized
+                else Mật khẩu đúng
+                    Service -> Service: 8. jwt.sign({ id, role }, SECRET_KEY)
+                    
+                    alt role == 'admin'
+                        Service -> Service: 9. redirectUrl = '/admin/profile'
+                    else role == 'user'
+                        Service -> Service: 10. redirectUrl = '/user/profile'
+                    end
+                    
+                    Service --> Controller: 11. Trả về { token, user, redirectUrl }
+                    Controller --> Client: 200 OK\n(Đăng nhập thành công,\n kèm Token và Redirect URL tương ứng)
+                end
+            end
+        end
+        deactivate Service
+        deactivate Controller
+    end
+end
+
+@enduml
