@@ -1,0 +1,15 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Người dùng (User)" as User
+actor "Quản trị viên (Admin)" as Admin
+
+package "Xác thực & Tài khoản" {
+  usecase "Đăng nhập (Login)" as UC_Login
+}
+
+User --> UC_Login
+Admin --> UC_Login
+
+@enduml
