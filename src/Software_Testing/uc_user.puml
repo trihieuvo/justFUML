@@ -1,0 +1,25 @@
+@startuml
+left to right direction
+
+frame "uc User" {
+  actor "User" as u
+  
+  rectangle " " {
+    usecase "Quản lý hồ sơ cá nhân" as UC4
+    usecase "Đăng bài viết" as UC5
+    usecase "Tương tác bài viết\n(Thích, Bình luận)" as UC6
+    usecase "Lưu bài viết" as UC7
+    usecase "Nhắn tin (Chat)" as UC8
+    usecase "Theo dõi người dùng (Follow)" as UC9
+    usecase "Nhận thông báo" as UC10
+  }
+}
+
+u -- UC4
+u -- UC5
+u -- UC6
+u -- UC7
+u -- UC8
+u -- UC9
+u -- UC10
+@enduml

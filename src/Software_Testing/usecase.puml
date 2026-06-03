@@ -1,0 +1,48 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Guest\n(Chưa đăng nhập)" as g
+actor "User\n(Đã đăng nhập)" as u
+actor "Admin\n(Quản trị viên)" as a
+
+rectangle "Hệ thống Mạng Xã Hội (UTE Dev Connect)" {
+  ' Các chức năng của Guest
+  usecase "Đăng nhập" as UC1
+  usecase "Đăng ký" as UC2
+  usecase "Quên mật khẩu" as UC3
+  
+  ' Các chức năng chính của User
+  usecase "Quản lý hồ sơ cá nhân" as UC4
+  usecase "Đăng bài viết" as UC5
+  usecase "Tương tác bài viết\n(Thích, Bình luận)" as UC6
+  usecase "Lưu bài viết" as UC7
+  usecase "Nhắn tin (Chat)" as UC8
+  usecase "Theo dõi người dùng (Follow)" as UC9
+  usecase "Nhận thông báo" as UC10
+  
+  ' Các chức năng của Admin
+  usecase "Quản lý người dùng" as UC11
+  usecase "Quản lý bài viết" as UC12
+  usecase "Xem thống kê" as UC13
+}
+
+' Kết nối tác nhân Guest
+g --> UC1
+g --> UC2
+g --> UC3
+
+' Kết nối tác nhân User
+u --> UC4
+u --> UC5
+u --> UC6
+u --> UC7
+u --> UC8
+u --> UC9
+u --> UC10
+
+' Kết nối tác nhân Admin
+a --> UC11
+a --> UC12
+a --> UC13
+@enduml

@@ -1,0 +1,17 @@
+@startuml
+left to right direction
+
+frame "uc Admin" {
+  actor "Admin" as a
+  
+  rectangle " " {
+    usecase "Quản lý người dùng" as UC11
+    usecase "Quản lý bài viết" as UC12
+    usecase "Xem thống kê" as UC13
+  }
+}
+
+a -- UC11
+a -- UC12
+a -- UC13
+@enduml
