@@ -6,63 +6,84 @@ skinparam linetype ortho
 title Sơ đồ tuần tự: Chỉnh sửa hồ sơ cá nhân (Edit Profile)
 
 actor "User / Admin" as User
-boundary "UI" as UI
-control "AuthMiddleware" as Middleware
-control "UserController" as Controller
-control "UserService" as Service
-entity "UserRepository" as Repository
+boundary "UI (React)" as UI
+control "verifyToken\n(AuthMiddleware)" as Auth
+control "profileLimiter\n(RateLimiter)" as Limiter
+control "validateEditProfile\n(Validator)" as Validator
+control "profileController" as Controller
+control "profileService" as Service
+entity "Profile Model\n(Mongoose)" as Model
 database "MongoDB" as DB
 
-User -> UI : Nhập thông tin cập nhật (Họ tên, SĐT, Avatar...)
+User -> UI : Nhập thông tin cập nhật (Khoa, Mã lớp, Trạng thái, Kỹ năng, Bio, Link MXH...)
 activate UI
 
-UI -> Middleware : HTTP PUT /api/users/profile\n(Header: Bearer JWT, Body: UpdateRequestDTO)
-activate Middleware
+UI -> Auth : HTTP PUT /api/profile\n(Header: Bearer JWT, Body: JSON)
+activate Auth
 
-' 1. Xác thực và Phân quyền (Authorization)
-Middleware -> Middleware : Xác thực JWT Token & Lấy userId
-alt Token không hợp lệ hoặc hết hạn
-    Middleware --> UI : HTTP 401 Unauthorized
-    UI --> User : Hiển thị lỗi, yêu cầu đăng nhập
+' Lớp 1: Xác thực JWT (Authentication)
+Auth -> Auth : Xác thực JWT & lấy userId
+alt Token không hợp lệ hoặc đã hết hạn
+    Auth --> UI : HTTP 403 Forbidden / 401 Unauthorized
+    UI --> User : Hiển thị lỗi, yêu cầu đăng nhập lại
 else Token hợp lệ
-    Middleware -> Controller : next(req, res) - Chuyển tiếp Request
-    deactivate Middleware
-    activate Controller
+    Auth -> Limiter : Chuyển tiếp Request
+    deactivate Auth
+    activate Limiter
 
-    ' 2. Xác thực dữ liệu đầu vào (Validation)
-    Controller -> Controller : Validate định dạng dữ liệu (Email, SĐT...)
-    alt Dữ liệu không hợp lệ
-        Controller --> UI : HTTP 400 Bad Request
-    else Dữ liệu hợp lệ
-        ' 3. Gọi tầng Service xử lý logic
-        Controller -> Service : updateProfile(userId, requestDTO)
-        activate Service
+    ' Lớp 2: Giới hạn tần suất (Rate Limiting)
+    alt Tần suất vượt quá 20 requests / 15 phút
+        Limiter --> UI : HTTP 429 Too Many Requests (Bạn cập nhật quá nhanh)
+    else Tần suất hợp lệ
+        Limiter -> Validator : Chuyển tiếp Request
+        deactivate Limiter
+        activate Validator
 
-        ' 4. Xử lý nghiệp vụ (Business Logic)
-        Service -> Service : Kiểm tra điều kiện nghiệp vụ\n(VD: Trùng email, trùng SĐT...)
+        ' Lớp 3: Xác thực dữ liệu đầu vào (Validation)
+        alt Thiếu các trường bắt buộc (status, skills, faculty)
+            Validator --> UI : HTTP 400 Bad Request (Kèm chi tiết lỗi điền thiếu)
+        else Dữ liệu đầu vào hợp lệ
+            Validator -> Controller : editProfile(req, res)
+            deactivate Validator
+            activate Controller
 
-        ' 5. Tương tác với CSDL qua Repository
-        Service -> Repository : update(userId, mappedData)
-        activate Repository
+            ' Xử lý tại Controller (Business Logic)
+            Controller -> Controller : Trích xuất fields & chuẩn hóa skills\n(Băm chuỗi skills sang mảng và trim)
 
-        Repository -> DB : Lệnh UPDATE / findByIdAndUpdate
-        activate DB
-        DB --> Repository : Success (Kết quả cập nhật)
-        deactivate DB
+            ' Gọi Service xử lý DB
+            Controller -> Service : updateUserProfile(userId, profileFields)
+            activate Service
 
-        Repository --> Service : Trả về thực thể User (đã cập nhật)
-        deactivate Repository
+            ' Tầng Service giao tiếp với Model
+            Service -> Model : findOne({ user: userId })
+            activate Model
+            Model --> Service : Kết quả tìm kiếm (Profile/Null)
 
-        ' 6. Phản hồi kết quả
-        Service --> Controller : Trả về UserDTO (đã ẩn Password/thông tin nhạy cảm)
-        deactivate Service
+            alt Profile đã tồn tại (Cập nhật)
+                Service -> Model : findOneAndUpdate({ user: userId }, { $set: profileFields }, { new: true })
+            else Profile chưa tồn tại (Tạo mới)
+                Service -> Model : new Profile(profileFields) & save()
+            end
 
-        Controller --> UI : HTTP 200 OK (Kèm dữ liệu User mới)
+            Model -> DB : Lệnh truy vấn ghi/đọc dữ liệu
+            activate DB
+            DB --> Model : Kết quả thực thi thành công
+            deactivate DB
+
+            Model --> Service : Trả về thực thể Profile mới nhất
+            deactivate Model
+
+            Service --> Controller : Trả về dữ liệu Profile đã cập nhật
+            deactivate Service
+
+            ' Trả về phản hồi cho client
+            Controller --> UI : HTTP 200 OK (Kèm thông tin Profile đã cập nhật)
+        end
     end
 end
 deactivate Controller
 
-UI --> User : Hiển thị thông báo thành công và cập nhật UI
+UI --> User : Hiển thị thông báo thành công và cập nhật UI mới nhất
 deactivate UI
 
 @enduml
