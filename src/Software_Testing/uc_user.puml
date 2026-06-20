@@ -1,25 +1,167 @@
 @startuml
 left to right direction
 
-frame "uc User" {
-  actor "User" as u
-  
-  rectangle " " {
-    usecase "Quản lý hồ sơ cá nhân" as UC4
-    usecase "Đăng bài viết" as UC5
-    usecase "Tương tác bài viết\n(Thích, Bình luận)" as UC6
-    usecase "Lưu bài viết" as UC7
-    usecase "Nhắn tin (Chat)" as UC8
-    usecase "Theo dõi người dùng (Follow)" as UC9
-    usecase "Nhận thông báo" as UC10
-  }
+skinparam BackgroundColor #FFFFFF
+skinparam Shadowing true
+skinparam ArrowLabelBackgroundColor #FFFFFF
+skinparam labelBackgroundColor #FFFFFF
+
+skinparam usecase {
+    BackgroundColor #D2E8FF
+    BorderColor #0059B3
+    FontName "Segoe UI"
+    FontSize 12
+    FontColor #000000
 }
 
-u -- UC4
-u -- UC5
-u -- UC6
-u -- UC7
-u -- UC8
-u -- UC9
-u -- UC10
+skinparam rectangle {
+    BackgroundColor #FFEBD6
+    BorderColor #D35400
+    FontName "Segoe UI"
+    FontSize 13
+    FontColor #000000
+}
+
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #000000
+    FontName "Segoe UI"
+    FontSize 12
+    FontColor #000000
+}
+
+skinparam arrow {
+    Color #333333
+    FontName "Segoe UI"
+    FontSize 10
+    FontColor #000000
+}
+
+frame "uc User" {
+    actor "User\n(Đã đăng nhập)" as u
+
+    rectangle " " #white {
+        usecase "Quản lý hồ sơ cá nhân" as UC_Profile
+        usecase "Quản lý bài viết" as UC_Post
+        usecase "Tương tác bài viết" as UC_Interaction
+        usecase "Quản lý nhóm học tập" as UC_Group
+        usecase "Nhắn tin (Chat)" as UC_Chat
+        usecase "Quản lý thông báo" as UC_Notification
+        usecase "Tìm kiếm tổng hợp" as UC_Search
+
+        rectangle "Quản lý thông tin hồ sơ" #FFEBD6 {
+            usecase "Xem hồ sơ cá nhân" as UC_ViewMe
+            usecase "Chỉnh sửa thông tin cá nhân" as UC_EditProfile
+            usecase "Xem hồ sơ người khác" as UC_ViewProfile
+            usecase "Theo dõi người dùng" as UC_Follow
+            usecase "Hủy theo dõi người dùng" as UC_Unfollow
+            usecase "Xem danh sách người theo dõi" as UC_GetFollowers
+            usecase "Xem danh sách đang theo dõi" as UC_GetFollowing
+        }
+
+        rectangle "Quản lý bài đăng" #FFEBD6 {
+            usecase "Đăng bài viết mới" as UC_AddPost
+            usecase "Chỉnh sửa bài viết" as UC_UpdatePost
+            usecase "Xóa bài viết" as UC_DeletePost
+            usecase "Lưu bài viết" as UC_SavePost
+            usecase "Xem bài viết đã lưu" as UC_GetSaved
+        }
+
+        rectangle "Tác vụ tương tác" #FFEBD6 {
+            usecase "Thích / Bỏ thích bài viết" as UC_LikePost
+            usecase "Bình luận bài viết" as UC_AddComment
+            usecase "Chỉnh sửa bình luận" as UC_UpdateComment
+            usecase "Xóa bình luận" as UC_DeleteComment
+            usecase "Chấp nhận câu trả lời" as UC_AcceptAnswer
+        }
+
+        rectangle "Quản lý nhóm học tập" #FFEBD6 {
+            usecase "Tạo nhóm học tập" as UC_CreateGroup
+            usecase "Tham gia nhóm" as UC_JoinGroup
+            usecase "Rời nhóm" as UC_LeaveGroup
+            usecase "Xem bảng tin nhóm" as UC_GetGroupFeed
+            usecase "Đăng bài viết trong nhóm" as UC_CreateGroupPost
+            usecase "Bình luận trong nhóm" as UC_AddGroupComment
+            usecase "Xóa nhóm" as UC_DeleteGroup
+        }
+
+        rectangle "Hệ thống tin nhắn" #FFEBD6 {
+            usecase "Xem danh sách phòng chat" as UC_GetConversations
+            usecase "Xem lịch sử tin nhắn" as UC_GetMessages
+            usecase "Gửi tin nhắn & đính kèm file" as UC_SendMessage
+            usecase "Tạo phòng chat mới" as UC_CreateChat
+        }
+
+        rectangle "Hệ thống thông báo" #FFEBD6 {
+            usecase "Xem danh sách thông báo" as UC_GetNotifications
+            usecase "Xem số thông báo chưa đọc" as UC_GetUnreadCount
+            usecase "Đánh dấu đã đọc" as UC_MarkRead
+            usecase "Đánh dấu tất cả đã đọc" as UC_MarkAllRead
+        }
+
+        rectangle "Tìm kiếm thông tin" #FFEBD6 {
+            usecase "Tìm kiếm bài viết" as UC_SearchPosts
+            usecase "Tìm kiếm lập trình viên" as UC_SearchDevs
+            usecase "Tìm kiếm nhóm" as UC_SearchGroups
+        }
+    }
+}
+
+u -- UC_Profile
+u -- UC_Post
+u -- UC_Interaction
+u -- UC_Group
+u -- UC_Chat
+u -- UC_Notification
+u -- UC_Search
+
+' Force vertical alignment
+UC_Profile -[hidden]down-> UC_Post
+UC_Post -[hidden]down-> UC_Interaction
+UC_Interaction -[hidden]down-> UC_Group
+UC_Group -[hidden]down-> UC_Chat
+UC_Chat -[hidden]down-> UC_Notification
+UC_Notification -[hidden]down-> UC_Search
+
+UC_Profile <... UC_ViewMe : <<extend>>
+UC_Profile <... UC_EditProfile : <<extend>>
+UC_Profile <... UC_ViewProfile : <<extend>>
+UC_Profile <... UC_Follow : <<extend>>
+UC_Profile <... UC_Unfollow : <<extend>>
+UC_Profile <... UC_GetFollowers : <<extend>>
+UC_Profile <... UC_GetFollowing : <<extend>>
+
+UC_Post <... UC_AddPost : <<extend>>
+UC_Post <... UC_UpdatePost : <<extend>>
+UC_Post <... UC_DeletePost : <<extend>>
+UC_Post <... UC_SavePost : <<extend>>
+UC_Post <... UC_GetSaved : <<extend>>
+
+UC_Interaction <... UC_LikePost : <<extend>>
+UC_Interaction <... UC_AddComment : <<extend>>
+UC_Interaction <... UC_UpdateComment : <<extend>>
+UC_Interaction <... UC_DeleteComment : <<extend>>
+UC_Interaction <... UC_AcceptAnswer : <<extend>>
+
+UC_Group <... UC_CreateGroup : <<extend>>
+UC_Group <... UC_JoinGroup : <<extend>>
+UC_Group <... UC_LeaveGroup : <<extend>>
+UC_Group <... UC_GetGroupFeed : <<extend>>
+UC_Group <... UC_CreateGroupPost : <<extend>>
+UC_Group <... UC_AddGroupComment : <<extend>>
+UC_Group <... UC_DeleteGroup : <<extend>>
+
+UC_Chat <... UC_GetConversations : <<extend>>
+UC_Chat <... UC_GetMessages : <<extend>>
+UC_Chat <... UC_SendMessage : <<extend>>
+UC_Chat <... UC_CreateChat : <<extend>>
+
+UC_Notification <... UC_GetNotifications : <<extend>>
+UC_Notification <... UC_GetUnreadCount : <<extend>>
+UC_Notification <... UC_MarkRead : <<extend>>
+UC_Notification <... UC_MarkAllRead : <<extend>>
+
+UC_Search <... UC_SearchPosts : <<extend>>
+UC_Search <... UC_SearchDevs : <<extend>>
+UC_Search <... UC_SearchGroups : <<extend>>
 @enduml

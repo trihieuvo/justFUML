@@ -1,17 +1,85 @@
 @startuml
 left to right direction
 
-frame "uc Admin" {
-  actor "Admin" as a
-  
-  rectangle " " {
-    usecase "Quản lý người dùng" as UC11
-    usecase "Quản lý bài viết" as UC12
-    usecase "Xem thống kê" as UC13
-  }
+skinparam BackgroundColor #FFFFFF
+skinparam Shadowing true
+skinparam ArrowLabelBackgroundColor #FFFFFF
+skinparam labelBackgroundColor #FFFFFF
+
+skinparam usecase {
+    BackgroundColor #D2E8FF
+    BorderColor #0059B3
+    FontName "Segoe UI"
+    FontSize 12
+    FontColor #000000
 }
 
-a -- UC11
-a -- UC12
-a -- UC13
+skinparam rectangle {
+    BackgroundColor #FFEBD6
+    BorderColor #D35400
+    FontName "Segoe UI"
+    FontSize 13
+    FontColor #000000
+}
+
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #000000
+    FontName "Segoe UI"
+    FontSize 12
+    FontColor #000000
+}
+
+skinparam arrow {
+    Color #333333
+    FontName "Segoe UI"
+    FontSize 10
+    FontColor #000000
+}
+
+frame "uc Admin" {
+    actor "Admin\n(Quản trị viên)" as a
+
+    rectangle " " #white {
+        usecase "Quản lý người dùng" as UC_ManageUsers
+        usecase "Quản lý bài viết" as UC_ManagePosts
+        usecase "Xem thống kê hệ thống" as UC_ViewStats
+
+        rectangle "Tác vụ quản lý người dùng" #FFEBD6 {
+            usecase "Xem danh sách người dùng" as UC_GetUsers
+            usecase "Xóa tài khoản người dùng" as UC_DeleteUser
+        }
+
+        rectangle "Tác vụ quản lý bài viết" #FFEBD6 {
+            usecase "Xem danh sách bài viết" as UC_GetPosts
+            usecase "Xóa bài viết vi phạm" as UC_DeletePost
+        }
+
+        rectangle "Tác vụ thống kê hệ thống" #FFEBD6 {
+            usecase "Thống kê người dùng" as UC_StatUsers
+            usecase "Thống kê bài viết" as UC_StatPosts
+            usecase "Thống kê nhóm" as UC_StatGroups
+            usecase "Thống kê tin nhắn" as UC_StatMessages
+        }
+    }
+}
+
+a -- UC_ManageUsers
+a -- UC_ManagePosts
+a -- UC_ViewStats
+
+' Force vertical alignment
+UC_ManageUsers -[hidden]down-> UC_ManagePosts
+UC_ManagePosts -[hidden]down-> UC_ViewStats
+
+UC_ManageUsers <... UC_GetUsers : <<extend>>
+UC_ManageUsers <... UC_DeleteUser : <<extend>>
+
+UC_ManagePosts <... UC_GetPosts : <<extend>>
+UC_ManagePosts <... UC_DeletePost : <<extend>>
+
+UC_ViewStats <... UC_StatUsers : <<extend>>
+UC_ViewStats <... UC_StatPosts : <<extend>>
+UC_ViewStats <... UC_StatGroups : <<extend>>
+UC_ViewStats <... UC_StatMessages : <<extend>>
 @enduml

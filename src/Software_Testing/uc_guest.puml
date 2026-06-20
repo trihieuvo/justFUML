@@ -1,17 +1,54 @@
 @startuml
 left to right direction
 
-frame "uc Guest" {
-  actor "Guest" as g
-  
-  rectangle " " {
-    usecase "Đăng nhập" as UC1
-    usecase "Đăng ký" as UC2
-    usecase "Quên mật khẩu" as UC3
-  }
+skinparam BackgroundColor #FFFFFF
+skinparam Shadowing true
+
+skinparam usecase {
+    BackgroundColor #D2E8FF
+    BorderColor #0059B3
+    FontName "Segoe UI"
+    FontSize 12
+    FontColor #000000
 }
 
-g -- UC1
-g -- UC2
-g -- UC3
+skinparam rectangle {
+    BackgroundColor #FFEBD6
+    BorderColor #D35400
+    FontName "Segoe UI"
+    FontSize 13
+    FontColor #000000
+}
+
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #000000
+    FontName "Segoe UI"
+    FontSize 12
+    FontColor #000000
+}
+
+skinparam arrow {
+    Color #333333
+    FontName "Segoe UI"
+    FontSize 10
+    FontColor #000000
+}
+
+frame "uc Guest" {
+    actor "Guest\n(Chưa đăng nhập)" as g
+
+    rectangle " " #white {
+        usecase "Đăng nhập" as UC_Login
+        usecase "Đăng ký" as UC_Register
+        usecase "Quên mật khẩu" as UC_Forgot
+        
+        UC_Login -[hidden]down-> UC_Register
+        UC_Register -[hidden]down-> UC_Forgot
+    }
+}
+
+g -- UC_Login
+g -- UC_Register
+g -- UC_Forgot
 @enduml

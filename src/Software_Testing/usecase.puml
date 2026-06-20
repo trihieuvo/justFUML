@@ -1,48 +1,83 @@
 @startuml
 left to right direction
-skinparam packageStyle rectangle
 
-actor "Guest\n(Chưa đăng nhập)" as g
-actor "User\n(Đã đăng nhập)" as u
-actor "Admin\n(Quản trị viên)" as a
+skinparam BackgroundColor #FFFFFF
+skinparam Shadowing true
 
-rectangle "Hệ thống Mạng Xã Hội (UTE Dev Connect)" {
-  ' Các chức năng của Guest
-  usecase "Đăng nhập" as UC1
-  usecase "Đăng ký" as UC2
-  usecase "Quên mật khẩu" as UC3
-  
-  ' Các chức năng chính của User
-  usecase "Quản lý hồ sơ cá nhân" as UC4
-  usecase "Đăng bài viết" as UC5
-  usecase "Tương tác bài viết\n(Thích, Bình luận)" as UC6
-  usecase "Lưu bài viết" as UC7
-  usecase "Nhắn tin (Chat)" as UC8
-  usecase "Theo dõi người dùng (Follow)" as UC9
-  usecase "Nhận thông báo" as UC10
-  
-  ' Các chức năng của Admin
-  usecase "Quản lý người dùng" as UC11
-  usecase "Quản lý bài viết" as UC12
-  usecase "Xem thống kê" as UC13
+skinparam usecase {
+    BackgroundColor #D2E8FF
+    BorderColor #0059B3
+    FontName "Segoe UI"
+    FontSize 12
+    FontColor #000000
 }
 
-' Kết nối tác nhân Guest
-g --> UC1
-g --> UC2
-g --> UC3
+skinparam rectangle {
+    BackgroundColor #FFEBD6
+    BorderColor #D35400
+    FontName "Segoe UI"
+    FontSize 13
+    FontColor #000000
+}
 
-' Kết nối tác nhân User
-u --> UC4
-u --> UC5
-u --> UC6
-u --> UC7
-u --> UC8
-u --> UC9
-u --> UC10
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #000000
+    FontName "Segoe UI"
+    FontSize 12
+    FontColor #000000
+}
 
-' Kết nối tác nhân Admin
-a --> UC11
-a --> UC12
-a --> UC13
+skinparam arrow {
+    Color #333333
+    FontName "Segoe UI"
+    FontSize 10
+    FontColor #000000
+}
+
+frame "Hệ thống UTE Dev Connect" {
+    actor "Guest\n(Chưa đăng nhập)" as g
+    actor "User\n(Đã đăng nhập)" as u
+    actor "Admin\n(Quản trị viên)" as a
+
+    rectangle "Hệ thống Mạng Xã Hội (UTE Dev Connect)" #white {
+        rectangle "Phân hệ Khách (Guest)" #FFEBD6 {
+            usecase "Đăng ký tài khoản" as UC_Register
+            usecase "Đăng nhập" as UC_Login
+            usecase "Khôi phục mật khẩu" as UC_Forgot
+        }
+
+        rectangle "Phân hệ Người dùng (User)" #FFEBD6 {
+            usecase "Quản lý hồ sơ cá nhân" as UC_Profile
+            usecase "Quản lý bài viết" as UC_Post
+            usecase "Tương tác bài viết" as UC_Interaction
+            usecase "Quản lý nhóm học tập" as UC_Group
+            usecase "Nhắn tin (Chat)" as UC_Chat
+            usecase "Quản lý thông báo" as UC_Notification
+            usecase "Tìm kiếm tổng hợp" as UC_Search
+        }
+
+        rectangle "Phân hệ Quản trị (Admin)" #FFEBD6 {
+            usecase "Quản lý người dùng" as UC_ManageUsers
+            usecase "Quản lý bài viết" as UC_ManagePosts
+            usecase "Xem thống kê hệ thống" as UC_ViewStats
+        }
+    }
+
+    g -- UC_Register
+    g -- UC_Login
+    g -- UC_Forgot
+
+    u -- UC_Profile
+    u -- UC_Post
+    u -- UC_Interaction
+    u -- UC_Group
+    u -- UC_Chat
+    u -- UC_Notification
+    u -- UC_Search
+
+    a -- UC_ManageUsers
+    a -- UC_ManagePosts
+    a -- UC_ViewStats
+}
 @enduml
